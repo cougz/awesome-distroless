@@ -18,16 +18,14 @@ IMAGE_NAME="distroless-base"
 
 # Full image references
 LOCAL_TAG="${IMAGE_NAME}:${VERSION}"
-LOCAL_LATEST="${IMAGE_NAME}:latest"
 REGISTRY_TAG="${REGISTRY}/${NAMESPACE}/${IMAGE_NAME}:${VERSION}"
-REGISTRY_LATEST="${REGISTRY}/${NAMESPACE}/${IMAGE_NAME}:latest"
 
 # Print publish information
 echo -e "${GREEN}Publishing Distroless Base Image to GitHub Container Registry${NC}"
 echo -e "${YELLOW}Version:${NC} ${VERSION}"
 echo -e "${YELLOW}Registry:${NC} ${REGISTRY}"
 echo -e "${YELLOW}Namespace:${NC} ${NAMESPACE}"
-echo -e "${YELLOW}Tags to push:${NC} ${VERSION}, latest"
+echo -e "${YELLOW}Tag to push:${NC} ${VERSION}"
 echo ""
 
 # Check if Docker is available
@@ -106,11 +104,6 @@ if ! check_local_image "${REGISTRY_TAG}"; then
     docker tag "${LOCAL_TAG}" "${REGISTRY_TAG}"
 fi
 
-if ! check_local_image "${REGISTRY_LATEST}"; then
-    echo "Tagging ${LOCAL_LATEST} as ${REGISTRY_LATEST}"
-    docker tag "${LOCAL_LATEST}" "${REGISTRY_LATEST}"
-fi
-
 # Push images
 echo ""
 echo -e "${BLUE}Pushing images to ${REGISTRY}...${NC}"
@@ -124,24 +117,14 @@ else
     exit 1
 fi
 
-# Push latest tag
-echo -e "${YELLOW}Pushing ${REGISTRY_LATEST}...${NC}"
-if docker push "${REGISTRY_LATEST}"; then
-    echo -e "${GREEN}✓ Successfully pushed ${REGISTRY_LATEST}${NC}"
-else
-    echo -e "${RED}✗ Failed to push ${REGISTRY_LATEST}${NC}"
-    exit 1
-fi
-
 # Display summary
 echo ""
 echo -e "${GREEN}═══════════════════════════════════════════════════════${NC}"
 echo -e "${GREEN}✓ Successfully published to GitHub Container Registry!${NC}"
 echo -e "${GREEN}═══════════════════════════════════════════════════════${NC}"
 echo ""
-echo "Images are now available at:"
+echo "Image is now available at:"
 echo -e "${BLUE}  ${REGISTRY_TAG}${NC}"
-echo -e "${BLUE}  ${REGISTRY_LATEST}${NC}"
 echo ""
 echo "To use this image in a Dockerfile:"
 echo -e "${YELLOW}  FROM ${REGISTRY_TAG}${NC}"

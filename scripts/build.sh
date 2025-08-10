@@ -17,17 +17,15 @@ IMAGE_NAME="distroless-base"
 
 # Full image references
 LOCAL_TAG="${IMAGE_NAME}:${VERSION}"
-LOCAL_LATEST="${IMAGE_NAME}:latest"
 REGISTRY_TAG="${REGISTRY}/${NAMESPACE}/${IMAGE_NAME}:${VERSION}"
-REGISTRY_LATEST="${REGISTRY}/${NAMESPACE}/${IMAGE_NAME}:latest"
 
 # Print build information
 echo -e "${GREEN}Building Distroless Base Image${NC}"
 echo -e "${YELLOW}Version:${NC} ${VERSION}"
 echo -e "${YELLOW}Registry:${NC} ${REGISTRY}"
 echo -e "${YELLOW}Namespace:${NC} ${NAMESPACE}"
-echo -e "${YELLOW}Local tags:${NC} ${LOCAL_TAG}, ${LOCAL_LATEST}"
-echo -e "${YELLOW}Registry tags:${NC} ${REGISTRY_TAG}, ${REGISTRY_LATEST}"
+echo -e "${YELLOW}Local tag:${NC} ${LOCAL_TAG}"
+echo -e "${YELLOW}Registry tag:${NC} ${REGISTRY_TAG}"
 echo ""
 
 # Check if Docker is available
@@ -54,9 +52,7 @@ echo -e "${GREEN}Building Docker image...${NC}"
 if docker build \
     --platform linux/amd64 \
     --tag "${LOCAL_TAG}" \
-    --tag "${LOCAL_LATEST}" \
     --tag "${REGISTRY_TAG}" \
-    --tag "${REGISTRY_LATEST}" \
     --label "org.opencontainers.image.version=${VERSION}" \
     --label "org.opencontainers.image.created=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
     --file Dockerfile \
