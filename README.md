@@ -57,7 +57,7 @@ You can extend the base image with additional tools for specific use cases:
 # Build with curl (HTTPS enabled)
 ./scripts/build.sh 0.5.0 curl
 
-# Build with multiple tools (perfect for API processing)
+# Build with multiple tools
 ./scripts/build.sh 0.5.0 "curl,jq"
 ```
 
