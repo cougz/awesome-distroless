@@ -11,30 +11,35 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Parse arguments
-VERSION="${1:-0.1.0}"
+LOCAL_TAG="${1}"
 NAMESPACE="${2:-yourusername}"
-TOOLS="${3:-}"
-REGISTRY="ghcr.io"
-IMAGE_NAME="distroless-base"
+REGISTRY="${3:-ghcr.io}"
 
-# Determine image naming
-if [ -n "${TOOLS}" ]; then
-    SORTED_TOOLS=$(echo "${TOOLS}" | tr ',' '\n' | sort | tr '\n' ',' | sed 's/,$//')
-    TOOLS_SUFFIX=$(echo "${SORTED_TOOLS}" | tr ',' '-')
-    LOCAL_TAG="${IMAGE_NAME}-${TOOLS_SUFFIX}:${VERSION}"
-    REGISTRY_TAG="${REGISTRY}/${NAMESPACE}/${IMAGE_NAME}-${TOOLS_SUFFIX}:${VERSION}"
-else
-    LOCAL_TAG="${IMAGE_NAME}:${VERSION}"
-    REGISTRY_TAG="${REGISTRY}/${NAMESPACE}/${IMAGE_NAME}:${VERSION}"
+if [ -z "${LOCAL_TAG}" ]; then
+    echo "Usage: $0 <LOCAL_IMAGE_TAG> [NAMESPACE] [REGISTRY]"
+    echo ""
+    echo "Arguments:"
+    echo "  LOCAL_IMAGE_TAG  Local image to publish (e.g., distroless-curl:0.4.0)"
+    echo "  NAMESPACE        Registry namespace (default: yourusername)"
+    echo "  REGISTRY         Container registry (default: ghcr.io)"
+    echo ""
+    echo "Examples:"
+    echo "  $0 distroless-base:0.4.0 cougz"
+    echo "  $0 distroless-curl:0.4.0 cougz ghcr.io"
+    exit 1
 fi
 
+# Extract image name and version from local tag
+IMAGE_NAME=$(echo "${LOCAL_TAG}" | cut -d: -f1)
+VERSION=$(echo "${LOCAL_TAG}" | cut -d: -f2)
+REGISTRY_TAG="${REGISTRY}/${NAMESPACE}/${LOCAL_TAG}"
+
 # Print publish information
-echo -e "${GREEN}Publishing Distroless Base Image to GitHub Container Registry${NC}"
-echo -e "${YELLOW}Version:${NC} ${VERSION}"
-echo -e "${YELLOW}Tools:${NC} ${TOOLS:-"none (base image only)"}"
+echo -e "${GREEN}Publishing Distroless Image to GitHub Container Registry${NC}"
+echo -e "${YELLOW}Local image:${NC} ${LOCAL_TAG}"
 echo -e "${YELLOW}Registry:${NC} ${REGISTRY}"
 echo -e "${YELLOW}Namespace:${NC} ${NAMESPACE}"
-echo -e "${YELLOW}Tag to push:${NC} ${VERSION}"
+echo -e "${YELLOW}Registry tag:${NC} ${REGISTRY_TAG}"
 echo ""
 
 # Check if Docker is available

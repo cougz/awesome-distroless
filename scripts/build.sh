@@ -13,24 +13,18 @@ NC='\033[0m' # No Color
 # Default values
 VERSION="${1:-0.2.0}"
 TOOLS="${2:-}"
-REGISTRY="${3:-ghcr.io}"
-NAMESPACE="${4:-yourusername}"
-IMAGE_NAME="distroless-base"
 
 show_usage() {
-    echo "Usage: $0 [VERSION] [TOOLS] [REGISTRY] [NAMESPACE]"
+    echo "Usage: $0 [VERSION] [TOOLS]"
     echo ""
     echo "Arguments:"
     echo "  VERSION     Image version (default: 0.2.0)"
     echo "  TOOLS       Comma-separated tools to add (optional)"
-    echo "  REGISTRY    Container registry (default: ghcr.io)"
-    echo "  NAMESPACE   Registry namespace (default: yourusername)"
     echo ""
     echo "Examples:"
     echo "  $0 0.2.0                        # Build base image only"
-    echo "  $0 0.2.0 curl                   # Build base + curl"
-    echo "  $0 0.2.0 \"curl,jq\"              # Build base + curl + jq"
-    echo "  $0 0.2.0 curl ghcr.io myorg     # Build for custom org"
+    echo "  $0 0.2.0 curl                   # Build curl image"
+    echo "  $0 0.2.0 \"curl,jq\"              # Build curl + jq image"
     echo ""
     echo "Available tools:"
     list_available_tools_detailed
@@ -68,23 +62,20 @@ if [ -n "${TOOLS}" ]; then
     # Sort tools for consistent naming
     SORTED_TOOLS=$(echo "${TOOLS}" | tr ',' '\n' | sort | tr '\n' ',' | sed 's/,$//')
     TOOLS_SUFFIX=$(echo "${SORTED_TOOLS}" | tr ',' '-')
-    IMAGE_TAG="${IMAGE_NAME}-${TOOLS_SUFFIX}:${VERSION}"
-    REGISTRY_TAG="${REGISTRY}/${NAMESPACE}/${IMAGE_NAME}-${TOOLS_SUFFIX}:${VERSION}"
+    IMAGE_NAME="distroless-${TOOLS_SUFFIX}"
+    IMAGE_TAG="${IMAGE_NAME}:${VERSION}"
     DOCKERFILE="tools/combined.Dockerfile"
 else
+    IMAGE_NAME="distroless-base"
     IMAGE_TAG="${IMAGE_NAME}:${VERSION}"
-    REGISTRY_TAG="${REGISTRY}/${NAMESPACE}/${IMAGE_NAME}:${VERSION}"
     DOCKERFILE="Dockerfile"
 fi
 
 # Print build information
-echo -e "${GREEN}Building Distroless Base Image${NC}"
+echo -e "${GREEN}Building Distroless Image${NC}"
 echo -e "${YELLOW}Version:${NC} ${VERSION}"
 echo -e "${YELLOW}Tools:${NC} ${TOOLS:-"none (base image only)"}"
-echo -e "${YELLOW}Registry:${NC} ${REGISTRY}"
-echo -e "${YELLOW}Namespace:${NC} ${NAMESPACE}"
-echo -e "${YELLOW}Local tag:${NC} ${IMAGE_TAG}"
-echo -e "${YELLOW}Registry tag:${NC} ${REGISTRY_TAG}"
+echo -e "${YELLOW}Image:${NC} ${IMAGE_TAG}"
 echo ""
 
 # Validate tools
@@ -122,7 +113,6 @@ if [ -z "${TOOLS}" ]; then
     if docker build \
         --platform linux/amd64 \
         --tag "${IMAGE_TAG}" \
-        --tag "${REGISTRY_TAG}" \
         --label "org.opencontainers.image.version=${VERSION}" \
         --label "org.opencontainers.image.created=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
         --file "${DOCKERFILE}" \
@@ -147,7 +137,6 @@ else
         if docker build \
             --platform linux/amd64 \
             --tag "${IMAGE_TAG}" \
-            --tag "${REGISTRY_TAG}" \
             --label "org.opencontainers.image.version=${VERSION}" \
             --label "org.opencontainers.image.created=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
             --file "${TOOL_DOCKERFILE}" \
@@ -323,7 +312,6 @@ EOF
         if docker build \
             --platform linux/amd64 \
             --tag "${IMAGE_TAG}" \
-            --tag "${REGISTRY_TAG}" \
             --label "org.opencontainers.image.version=${VERSION}" \
             --label "org.opencontainers.image.created=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
             --file "${TEMP_DOCKERFILE}" \
@@ -343,11 +331,7 @@ fi
 # Display image information
 echo ""
 echo -e "${GREEN}Image Information:${NC}"
-if [ -n "${TOOLS}" ]; then
-    docker images --filter "reference=${IMAGE_NAME}-*" --format "table {{.Repository}}:{{.Tag}}\t{{.Size}}\t{{.CreatedAt}}"
-else
-    docker images --filter "reference=${IMAGE_NAME}" --format "table {{.Repository}}:{{.Tag}}\t{{.Size}}\t{{.CreatedAt}}"
-fi
+docker images --filter "reference=${IMAGE_NAME}" --format "table {{.Repository}}:{{.Tag}}\t{{.Size}}\t{{.CreatedAt}}"
 
 # Verify image size
 SIZE=$(docker image inspect "${IMAGE_TAG}" --format='{{.Size}}' | numfmt --to=iec)
@@ -415,7 +399,7 @@ fi
 
 echo ""
 echo "To publish to registry, run:"
-echo -e "${YELLOW}  ./scripts/publish.sh ${VERSION} ${NAMESPACE}${NC}"
+echo -e "${YELLOW}  ./scripts/publish.sh ${IMAGE_TAG}${NC}"
 
 if [ -n "${TOOLS}" ]; then
     echo ""
