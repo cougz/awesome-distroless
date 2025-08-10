@@ -1,10 +1,10 @@
 name: jq
-version: "1.7.1"
+version: "1.8.1"
 description: "JSON processor"
 category: "utility"
 build:
   type: "download"
-  url: "https://github.com/jqlang/jq/releases/download/v{version}/jq-linux-amd64"
+  url: "https://github.com/jqlang/jq/releases/download/jq-{version}/jq-linux-amd64"
   build_dependencies:
     - "wget"
     - "ca-certificates"

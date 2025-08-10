@@ -125,12 +125,34 @@ EOF
 
     if [ "${build_type}" = "source" ]; then
         local configure_flags=$(yq eval '.build.configure_flags | join(" ")' "${config_file}")
+        local custom_build_steps=$(yq eval '.build.custom_build_steps[]?' "${config_file}" 2>/dev/null || echo "")
+        
+        # Determine archive type and extraction command
+        local archive_name="${tool_name}.tar.gz"
+        local tar_flags="-xzf"
+        if [[ "${download_url}" == *".tar.bz2"* ]]; then
+            archive_name="${tool_name}.tar.bz2"
+            tar_flags="-xjf"
+        fi
+        
         cat >> "${output_file}" << EOF
 ARG TOOL_VERSION=${tool_version}
-RUN wget -q "${download_url}" -O /tmp/${tool_name}.tar.gz && \\
+RUN wget -q "${download_url}" -O /tmp/${archive_name} && \\
     cd /tmp && \\
-    tar -xzf ${tool_name}.tar.gz && \\
-    cd ${tool_name}-* && \\
+    tar ${tar_flags} ${archive_name} && \\
+    cd postgresql* || cd ${tool_name}* && \\
+EOF
+        
+        # Add custom build steps if they exist
+        if [ -n "${custom_build_steps}" ]; then
+            while IFS= read -r step; do
+                if [ -n "${step}" ]; then
+                    echo "    ${step} && \\" >> "${output_file}"
+                fi
+            done <<< "${custom_build_steps}"
+        fi
+        
+        cat >> "${output_file}" << EOF
     ./configure ${configure_flags} && \\
     make -j\$(nproc) && \\
     make install && \\
@@ -138,12 +160,34 @@ RUN wget -q "${download_url}" -O /tmp/${tool_name}.tar.gz && \\
 
 EOF
     else
-        cat >> "${output_file}" << EOF
+        # Special handling for archives
+        if [ "${tool_name}" = "go" ]; then
+            cat >> "${output_file}" << EOF
+RUN wget -q "${download_url}" -O /tmp/go.tar.gz && \\
+    cd /tmp && \\
+    tar -xzf go.tar.gz && \\
+    strip /tmp/go/bin/* || true
+
+EOF
+        elif [ "${tool_name}" = "node" ]; then
+            cat >> "${output_file}" << EOF
+RUN wget -q "${download_url}" -O /tmp/node.tar.xz && \\
+    cd /tmp && \\
+    tar -xJf node.tar.xz && \\
+    mv node-v*-linux-x64 node && \\
+    strip /tmp/node/bin/node && \\
+    strip /tmp/node/bin/npm || true && \\
+    strip /tmp/node/bin/npx || true
+
+EOF
+        else
+            cat >> "${output_file}" << EOF
 RUN wget -q "${download_url}" -O ${binary_path} && \\
     chmod +x ${binary_path} && \\
     strip ${binary_path} || true
 
 EOF
+        fi
     fi
 
     cat >> "${output_file}" << EOF

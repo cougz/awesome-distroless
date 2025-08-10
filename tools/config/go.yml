@@ -13,4 +13,5 @@ build:
   runtime_libraries: []
   binary_path: "/tmp/go"
   install_path: "/usr/local/go"
+  extract_archive: true
   test_command: "go version"
