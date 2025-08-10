@@ -46,21 +46,6 @@ ENTRYPOINT ["/app/myapp"]
 - `build.sh [VERSION]` - Build image locally
 - `publish.sh [VERSION] [NAMESPACE]` - Push to ghcr.io
 
-## Example: Go Application
-
-```dockerfile
-# Build
-FROM golang:1.21 AS builder
-WORKDIR /app
-COPY . .
-RUN CGO_ENABLED=0 go build -o myapp
-
-# Runtime
-FROM ghcr.io/your-username/distroless-base:0.1.0
-COPY --from=builder --chown=1000:1000 /app/myapp /app/myapp
-ENTRYPOINT ["/app/myapp"]
-```
-
 ## License
 
 MIT
