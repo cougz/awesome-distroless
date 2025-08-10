@@ -157,9 +157,24 @@ else
 # Multi-stage build for distroless base with multiple tools
 FROM debian:trixie-slim AS base-builder
 
-# Install ca-certificates and timezone data
+# Install ca-certificates, timezone data, and required libraries
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends ca-certificates tzdata && \
+    apt-get install -y --no-install-recommends \
+        ca-certificates \
+        tzdata \
+        libcurl4-gnutls-dev \
+        libpcre2-dev \
+        liblzma-dev \
+        libexpat1-dev \
+        libgnutls30t64 \
+        libnettle8t64 \
+        libhogweed6t64 \
+        libgmp10 \
+        libidn2-0 \
+        libunistring5 \
+        libtasn1-6 \
+        libp11-kit0 \
+        libffi8 && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
@@ -227,6 +242,88 @@ RUN wget -q -L "https://github.com/jqlang/jq/releases/latest/download/jq-linux64
 
 EOF
                     ;;
+                git)
+                    cat >> "${TEMP_DOCKERFILE}" << 'EOF'
+
+# Build git
+FROM debian:trixie-slim AS git-builder
+ARG GIT_VERSION=2.50.1
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        build-essential \
+        libssl-dev \
+        libghc-zlib-dev \
+        libcurl4-gnutls-dev \
+        libpcre2-dev \
+        liblzma-dev \
+        libexpat1-dev \
+        gettext \
+        unzip \
+        wget \
+        ca-certificates \
+        binutils \
+        autoconf \
+        make && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+RUN wget -q "https://github.com/git/git/archive/v${GIT_VERSION}.tar.gz" -O /tmp/git.tar.gz && \
+    cd /tmp && \
+    tar -xzf git.tar.gz && \
+    cd git-${GIT_VERSION} && \
+    make configure && \
+    ./configure \
+        --prefix=/tmp/git-install \
+        --with-curl \
+        --with-expat \
+        --with-openssl \
+        --without-tcltk \
+        --without-python && \
+    make -j$(nproc) all && \
+    make install && \
+    strip /tmp/git-install/bin/git && \
+    strip /tmp/git-install/bin/git-* || true && \
+    strip /tmp/git-install/libexec/git-core/git || true && \
+    strip /tmp/git-install/libexec/git-core/git-* || true
+
+EOF
+                    ;;
+                go)
+                    cat >> "${TEMP_DOCKERFILE}" << 'EOF'
+
+# Download Go
+FROM debian:trixie-slim AS go-builder
+ARG GO_VERSION=1.24.6
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends wget ca-certificates tar binutils && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+RUN wget -q "https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz" -O /tmp/go.tar.gz && \
+    cd /tmp && \
+    tar -xzf go.tar.gz && \
+    strip /tmp/go/bin/* || true
+
+EOF
+                    ;;
+                node)
+                    cat >> "${TEMP_DOCKERFILE}" << 'EOF'
+
+# Download Node.js
+FROM debian:trixie-slim AS node-builder
+ARG NODE_VERSION=24.5.0
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends wget ca-certificates xz-utils binutils && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+RUN wget -q "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-x64.tar.xz" -O /tmp/node.tar.xz && \
+    cd /tmp && \
+    tar -xJf node.tar.xz && \
+    mv node-v${NODE_VERSION}-linux-x64 node && \
+    strip /tmp/node/bin/node && \
+    strip /tmp/node/bin/npm || true && \
+    strip /tmp/node/bin/npx || true
+
+EOF
+                    ;;
             esac
         done
 
@@ -266,6 +363,46 @@ EOF
 COPY --from=jq-builder /tmp/jq /usr/local/bin/jq
 EOF
                     ;;
+                git)
+                    cat >> "${TEMP_DOCKERFILE}" << 'EOF'
+COPY --from=git-builder /tmp/git-install /usr/local/
+# Add additional libraries needed for Git
+COPY --from=base-builder /usr/lib/x86_64-linux-gnu/libcurl-gnutls.so.4 /usr/lib/x86_64-linux-gnu/libcurl-gnutls.so.4
+COPY --from=base-builder /usr/lib/x86_64-linux-gnu/libpcre2-8.so.0 /usr/lib/x86_64-linux-gnu/libpcre2-8.so.0
+COPY --from=base-builder /lib/x86_64-linux-gnu/liblzma.so.5 /lib/x86_64-linux-gnu/liblzma.so.5
+COPY --from=base-builder /usr/lib/x86_64-linux-gnu/libexpat.so.1 /usr/lib/x86_64-linux-gnu/libexpat.so.1
+COPY --from=base-builder /usr/lib/x86_64-linux-gnu/libgnutls.so.30 /usr/lib/x86_64-linux-gnu/libgnutls.so.30
+COPY --from=base-builder /usr/lib/x86_64-linux-gnu/libhogweed.so.6 /usr/lib/x86_64-linux-gnu/libhogweed.so.6
+COPY --from=base-builder /usr/lib/x86_64-linux-gnu/libnettle.so.8 /usr/lib/x86_64-linux-gnu/libnettle.so.8
+COPY --from=base-builder /usr/lib/x86_64-linux-gnu/libgmp.so.10 /usr/lib/x86_64-linux-gnu/libgmp.so.10
+COPY --from=base-builder /usr/lib/x86_64-linux-gnu/libidn2.so.0 /usr/lib/x86_64-linux-gnu/libidn2.so.0
+COPY --from=base-builder /usr/lib/x86_64-linux-gnu/libunistring.so.5 /usr/lib/x86_64-linux-gnu/libunistring.so.5
+COPY --from=base-builder /usr/lib/x86_64-linux-gnu/libtasn1.so.6 /usr/lib/x86_64-linux-gnu/libtasn1.so.6
+COPY --from=base-builder /usr/lib/x86_64-linux-gnu/libp11-kit.so.0 /usr/lib/x86_64-linux-gnu/libp11-kit.so.0
+COPY --from=base-builder /usr/lib/x86_64-linux-gnu/libffi.so.8 /usr/lib/x86_64-linux-gnu/libffi.so.8
+EOF
+                    ;;
+                go)
+                    cat >> "${TEMP_DOCKERFILE}" << 'EOF'
+COPY --from=go-builder /tmp/go /usr/local/go
+EOF
+                    ;;
+                node)
+                    cat >> "${TEMP_DOCKERFILE}" << 'EOF'
+COPY --from=node-builder /tmp/node/bin/node /usr/local/bin/node
+COPY --from=node-builder /tmp/node/bin/npm /usr/local/bin/npm
+COPY --from=node-builder /tmp/node/bin/npx /usr/local/bin/npx
+COPY --from=node-builder /tmp/node/lib /usr/local/lib
+COPY --from=node-builder /tmp/node/include /usr/local/include
+COPY --from=node-builder /tmp/node/share /usr/local/share
+# Add additional libraries needed for Node.js
+COPY --from=base-builder /lib/x86_64-linux-gnu/libm.so.6 /lib/x86_64-linux-gnu/libm.so.6
+COPY --from=base-builder /lib/x86_64-linux-gnu/libdl.so.2 /lib/x86_64-linux-gnu/libdl.so.2
+COPY --from=base-builder /lib/x86_64-linux-gnu/librt.so.1 /lib/x86_64-linux-gnu/librt.so.1
+COPY --from=base-builder /usr/lib/x86_64-linux-gnu/libstdc++.so.6 /usr/lib/x86_64-linux-gnu/libstdc++.so.6
+COPY --from=base-builder /lib/x86_64-linux-gnu/libgcc_s.so.1 /lib/x86_64-linux-gnu/libgcc_s.so.1
+EOF
+                    ;;
             esac
         done
 
@@ -273,11 +410,14 @@ EOF
         cat >> "${TEMP_DOCKERFILE}" << EOF
 
 # Set environment variables
-ENV PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+ENV PATH="/usr/local/go/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 ENV HOME="/home/app"
 ENV USER="app"
 ENV TZ="UTC"
 ENV SSL_CERT_FILE="/etc/ssl/certs/ca-certificates.crt"
+ENV GOROOT="/usr/local/go"
+ENV GOPATH="/home/app/go"
+ENV NODE_PATH="/usr/local/lib/node_modules"
 
 WORKDIR /home/app
 USER 1000:1000
