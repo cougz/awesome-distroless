@@ -1,9 +1,12 @@
 # Multi-stage build for minimal distroless base image
-# Stage 1: Prepare essential files using Alpine
-FROM alpine:3.19 AS builder
+# Stage 1: Prepare essential files using Debian 12
+FROM debian:12-slim AS builder
 
 # Install ca-certificates and timezone data
-RUN apk add --no-cache ca-certificates tzdata
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends ca-certificates tzdata && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
 # Create user and group files for non-root user
 # UID/GID 1000 for 'app' user
