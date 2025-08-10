@@ -76,16 +76,20 @@ The new tool manager provides a clean interface for managing tools:
 
 **Utilities:**
 - `curl` (v8.11.1) - HTTPS-enabled HTTP client
-- `jq` (latest) - JSON processor
+- `jq` (v1.7.1) - JSON processor
 
 **Development Tools:**
 - `git` (v2.50.1) - Version control system  
 - `go` (v1.24.6) - Go programming language
 - `node` (v24.5.0) - Node.js runtime with npm
 
+**Database:**
+- `postgres` (v17.2) - PostgreSQL database server with complete toolset
+
 ### Tool Categories
 - **utility**: General-purpose utilities like curl, jq
 - **development**: Development tools like git, go, node
+- **database**: Database servers like postgres
 
 ## Development Workflow
 
@@ -192,6 +196,10 @@ docker run --rm -v $(pwd):/workspace distroless-go:0.2.0 go version
 # JSON processing
 ./scripts/build.sh 0.2.0 jq
 echo '{"name":"test"}' | docker run --rm -i distroless-jq:0.2.0 jq '.name'
+
+# PostgreSQL database server
+./scripts/build.sh 0.2.0 postgres
+docker run --rm distroless-postgres:0.2.0 postgres --version
 ```
 
 ## Image Naming
@@ -246,7 +254,8 @@ docker-distroless/
 │       ├── jq.yml
 │       ├── git.yml
 │       ├── go.yml
-│       └── node.yml
+│       ├── node.yml
+│       └── postgres.yml
 ├── Dockerfile               # Base distroless image
 └── README.md
 ```
