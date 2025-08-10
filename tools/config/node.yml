@@ -1,0 +1,21 @@
+name: node
+version: "24.5.0"
+description: "Node.js runtime with npm"
+category: "development"
+build:
+  type: "download"
+  url: "https://nodejs.org/dist/v{version}/node-v{version}-linux-x64.tar.xz"
+  build_dependencies:
+    - "wget"
+    - "ca-certificates"
+    - "xz-utils"
+    - "binutils"
+  runtime_libraries:
+    - "/lib/x86_64-linux-gnu/libm.so.6"
+    - "/lib/x86_64-linux-gnu/libdl.so.2"
+    - "/lib/x86_64-linux-gnu/librt.so.1"
+    - "/usr/lib/x86_64-linux-gnu/libstdc++.so.6"
+    - "/lib/x86_64-linux-gnu/libgcc_s.so.1"
+  binary_path: "/tmp/node"
+  install_path: "/usr/local/"
+  test_command: "node --version"

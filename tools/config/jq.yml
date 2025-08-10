@@ -1,0 +1,15 @@
+name: jq
+version: "latest"
+description: "JSON processor"
+category: "utility"
+build:
+  type: "download"
+  url: "https://github.com/jqlang/jq/releases/latest/download/jq-linux64"
+  build_dependencies:
+    - "wget"
+    - "ca-certificates"
+    - "binutils"
+  runtime_libraries: []
+  binary_path: "/tmp/jq"
+  install_path: "/usr/local/bin/jq"
+  test_command: "jq --version"
