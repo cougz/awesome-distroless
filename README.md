@@ -63,15 +63,8 @@ You can extend the base image with additional tools for specific use cases:
 
 ### Available Tools
 
-- **`curl`** - HTTP client with full HTTPS/SSL support (**9.97MB**)
-  - Statically compiled with OpenSSL 3.0.17
-  - Perfect for API calls, health checks, file downloads
-  - Supports all modern TLS/SSL protocols
-  
-- **`jq`** - JSON processor (**3.78MB**)
-  - Latest version (1.8.1) 
-  - Ideal for parsing API responses
-  - Combines perfectly with curl for API workflows
+- `curl`
+- `jq`
 
 ### Common Use Cases
 
