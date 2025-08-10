@@ -9,6 +9,28 @@ Minimal, secure distroless images built from scratch. Base image **1.53MB**, wit
 - **Minimal**: Only CA certificates, timezone data, and user config
 - **Secure**: Smallest possible attack surface
 
+## Why Use Distroless?
+
+Traditional container images include entire operating systems with hundreds of packages you'll never use. Every binary is a potential security risk. Distroless changes this completely.
+
+**What's NOT in a distroless image:**
+- ❌ No shell (`sh`, `bash`) - Can't spawn interactive shells
+- ❌ No coreutils (`ls`, `cat`, `echo`, `mkdir`, `rm`) - Can't manipulate files
+- ❌ No package manager (`apt`, `yum`, `apk`) - Can't install software
+- ❌ No text editors (`vi`, `nano`) - Can't modify configs
+- ❌ No network tools (`ping`, `netstat`, `ss`) - Can't probe network
+- ❌ No process tools (`ps`, `top`, `kill`) - Can't inspect processes
+- ❌ No system libraries beyond the absolute minimum
+
+**Result:** Your application is the ONLY executable in the container. An attacker who gains access has no tools to establish persistence, explore the system, or download malware. They can't even list files without your application's help.
+
+**Perfect for:**
+- Production microservices
+- Security-critical applications  
+- Compliance environments (PCI, HIPAA)
+- Minimizing CVE exposure
+- Reducing container image size
+
 ## Quick Start
 
 ```bash
