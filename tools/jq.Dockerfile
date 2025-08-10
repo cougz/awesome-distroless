@@ -17,7 +17,7 @@ RUN echo "hosts: files dns" > /etc/nsswitch.conf
 # Stage 2: Download jq binary only
 FROM debian:12-slim AS jq-builder
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends wget ca-certificates && \
+    apt-get install -y --no-install-recommends wget ca-certificates binutils && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 

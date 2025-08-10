@@ -197,7 +197,6 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         build-essential \
         libssl-dev \
-        zlib1g-dev \
         wget \
         ca-certificates \
         pkg-config && \
@@ -213,12 +212,13 @@ RUN wget -q https://curl.se/download/curl-${CURL_VERSION}.tar.gz && \
         --disable-ldap \
         --disable-ipv6 \
         --with-ssl \
+        --without-zlib \
         --disable-docs \
         --disable-manual \
         --without-libpsl && \
     make -j$(nproc) && \
-    strip src/curl \
-    upx --best src/curl || true
+    strip src/curl && \
+    cp src/curl /tmp/curl
 
 EOF
                     ;;
@@ -228,7 +228,7 @@ EOF
 # Download jq
 FROM debian:12-slim AS jq-builder
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends wget ca-certificates && \
+    apt-get install -y --no-install-recommends wget ca-certificates binutils && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 RUN wget -q -L "https://github.com/jqlang/jq/releases/latest/download/jq-linux64" -O /tmp/jq && \
@@ -243,7 +243,7 @@ EOF
 # Get dig
 FROM debian:12-slim AS dig-builder
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends dnsutils && \
+    apt-get install -y --no-install-recommends dnsutils binutils && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 RUN cp /usr/bin/dig /tmp/dig && \
@@ -267,6 +267,12 @@ COPY --from=base-builder /etc/passwd.minimal /etc/passwd
 COPY --from=base-builder /etc/group.minimal /etc/group
 COPY --from=base-builder /etc/nsswitch.conf /etc/nsswitch.conf
 
+COPY --from=base-builder /lib64/ld-linux-x86-64.so.2 /lib64/ld-linux-x86-64.so.2
+COPY --from=base-builder /lib/x86_64-linux-gnu/libc.so.6 /lib/x86_64-linux-gnu/libc.so.6
+COPY --from=base-builder /lib/x86_64-linux-gnu/libpthread.so.0 /lib/x86_64-linux-gnu/libpthread.so.0
+COPY --from=base-builder /lib/x86_64-linux-gnu/libssl.so.3 /lib/x86_64-linux-gnu/libssl.so.3
+COPY --from=base-builder /lib/x86_64-linux-gnu/libcrypto.so.3 /lib/x86_64-linux-gnu/libcrypto.so.3
+
 EOF
 
         # Copy each tool binary
@@ -274,7 +280,7 @@ EOF
             case "${tool}" in
                 curl)
                     cat >> "${TEMP_DOCKERFILE}" << 'EOF'
-COPY --from=curl-builder /curl-*/src/curl /usr/local/bin/curl
+COPY --from=curl-builder /tmp/curl /usr/local/bin/curl
 EOF
                     ;;
                 jq)

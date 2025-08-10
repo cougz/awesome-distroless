@@ -17,7 +17,7 @@ RUN echo "hosts: files dns" > /etc/nsswitch.conf
 # Stage 2: Extract dig binary only
 FROM debian:12-slim AS dig-builder
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends dnsutils && \
+    apt-get install -y --no-install-recommends dnsutils binutils && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
