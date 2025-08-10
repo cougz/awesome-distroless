@@ -259,11 +259,21 @@ EOF
         echo "" >> "${output_file}"
     fi
 
-    cat >> "${output_file}" << EOF
+    # Special handling for postgres - copy libpq shared library
+    if [ "${tool_name}" = "postgres" ]; then
+        cat >> "${output_file}" << EOF
+# Copy PostgreSQL installation and shared libraries
+COPY --from=tool-builder ${binary_path} ${install_path}
+COPY --from=tool-builder ${binary_path}/lib/libpq.so* /usr/local/lib/
+
+EOF
+    else
+        cat >> "${output_file}" << EOF
 # Copy tool binary/installation
 COPY --from=tool-builder ${binary_path} ${install_path}
 
 EOF
+    fi
     
     # Special final stage handling for postgres
     if [ "${tool_name}" = "postgres" ]; then
@@ -273,6 +283,7 @@ COPY --from=tool-builder /tmp/pgdata-final/ /
 
 # Environment
 ENV PATH="/usr/local/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin"
+ENV LD_LIBRARY_PATH="/usr/local/lib"
 ENV HOME="/home/app"
 ENV USER="app"
 ENV TZ="UTC"

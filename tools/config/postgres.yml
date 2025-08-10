@@ -8,7 +8,7 @@ build:
   configure_flags:
     - "--prefix=/tmp/postgres-install"
     - "--with-openssl"
-    - "--with-zlib"
+    - "--with-zlib" 
     - "--without-icu"
     - "--without-readline"
   build_dependencies:
