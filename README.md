@@ -1,6 +1,6 @@
 # Docker Distroless Base Image
 
-Minimal, secure distroless base image built from scratch. **1.24MB** total size.
+Minimal, secure distroless base image built from scratch. **1.53MB** total size.
 
 ## Features
 
@@ -36,7 +36,7 @@ ENTRYPOINT ["/app/myapp"]
 
 | Image | Size | Distroless | Rootless | Use Case |
 |-------|------|------------|----------|----------|
-| **This Image** | **1.24MB** | ✅ | ✅ | Production, security-critical |
+| **This Image** | **1.53MB** | ✅ | ✅ | Production, security-critical |
 | Alpine | ~5MB | ❌ | ❌ | Development, debugging |
 | Debian Slim | ~70MB | ❌ | ❌ | Complex dependencies |
 | Google Distroless | ~2-20MB | ✅ | ✅ | Language-specific |

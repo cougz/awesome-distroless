@@ -45,6 +45,6 @@ LABEL org.opencontainers.image.description="Minimal distroless base image with C
 LABEL org.opencontainers.image.authors="cougz"
 LABEL org.opencontainers.image.source="https://github.com/cougz/docker-distroless-base"
 LABEL org.opencontainers.image.base.name="scratch"
-LABEL org.opencontainers.image.version="0.1.0"
+LABEL org.opencontainers.image.version="0.2.0"
 
 # No ENTRYPOINT or CMD - this is a base image
