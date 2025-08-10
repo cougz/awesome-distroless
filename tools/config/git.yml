@@ -17,7 +17,7 @@ build:
   build_dependencies:
     - "build-essential"
     - "libssl-dev"
-    - "libghc-zlib-dev"
+    - "zlib1g-dev"
     - "libcurl4-gnutls-dev"
     - "libpcre2-dev"
     - "liblzma-dev"
