@@ -13,16 +13,25 @@ NC='\033[0m' # No Color
 # Parse arguments
 VERSION="${1:-0.1.0}"
 NAMESPACE="${2:-yourusername}"
+TOOLS="${3:-}"
 REGISTRY="ghcr.io"
 IMAGE_NAME="distroless-base"
 
-# Full image references
-LOCAL_TAG="${IMAGE_NAME}:${VERSION}"
-REGISTRY_TAG="${REGISTRY}/${NAMESPACE}/${IMAGE_NAME}:${VERSION}"
+# Determine image naming
+if [ -n "${TOOLS}" ]; then
+    SORTED_TOOLS=$(echo "${TOOLS}" | tr ',' '\n' | sort | tr '\n' ',' | sed 's/,$//')
+    TOOLS_SUFFIX=$(echo "${SORTED_TOOLS}" | tr ',' '-')
+    LOCAL_TAG="${IMAGE_NAME}-${TOOLS_SUFFIX}:${VERSION}"
+    REGISTRY_TAG="${REGISTRY}/${NAMESPACE}/${IMAGE_NAME}-${TOOLS_SUFFIX}:${VERSION}"
+else
+    LOCAL_TAG="${IMAGE_NAME}:${VERSION}"
+    REGISTRY_TAG="${REGISTRY}/${NAMESPACE}/${IMAGE_NAME}:${VERSION}"
+fi
 
 # Print publish information
 echo -e "${GREEN}Publishing Distroless Base Image to GitHub Container Registry${NC}"
 echo -e "${YELLOW}Version:${NC} ${VERSION}"
+echo -e "${YELLOW}Tools:${NC} ${TOOLS:-"none (base image only)"}"
 echo -e "${YELLOW}Registry:${NC} ${REGISTRY}"
 echo -e "${YELLOW}Namespace:${NC} ${NAMESPACE}"
 echo -e "${YELLOW}Tag to push:${NC} ${VERSION}"

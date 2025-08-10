@@ -20,12 +20,10 @@ FROM debian:12-slim AS curl-builder
 
 ARG CURL_VERSION=8.11.1
 
-# Install only what's needed to build static curl
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         build-essential \
         libssl-dev \
-        zlib1g-dev \
         wget \
         ca-certificates \
         pkg-config && \
@@ -43,11 +41,13 @@ RUN wget -q https://curl.se/download/curl-${CURL_VERSION}.tar.gz && \
         --disable-ldap \
         --disable-ipv6 \
         --with-ssl \
+        --without-zlib \
         --disable-docs \
         --disable-manual \
         --without-libpsl && \
     make -j$(nproc) && \
-    strip src/curl
+    strip src/curl && \
+    cp src/curl /tmp/curl
 
 # Stage 3: Build the final distroless image from scratch
 FROM scratch
@@ -59,8 +59,14 @@ COPY --from=base-builder /etc/passwd.minimal /etc/passwd
 COPY --from=base-builder /etc/group.minimal /etc/group
 COPY --from=base-builder /etc/nsswitch.conf /etc/nsswitch.conf
 
+COPY --from=base-builder /lib64/ld-linux-x86-64.so.2 /lib64/ld-linux-x86-64.so.2
+COPY --from=base-builder /lib/x86_64-linux-gnu/libc.so.6 /lib/x86_64-linux-gnu/libc.so.6
+COPY --from=base-builder /lib/x86_64-linux-gnu/libpthread.so.0 /lib/x86_64-linux-gnu/libpthread.so.0
+COPY --from=base-builder /lib/x86_64-linux-gnu/libssl.so.3 /lib/x86_64-linux-gnu/libssl.so.3
+COPY --from=base-builder /lib/x86_64-linux-gnu/libcrypto.so.3 /lib/x86_64-linux-gnu/libcrypto.so.3
+
 # Copy only the curl binary
-COPY --from=curl-builder /curl-*/src/curl /usr/local/bin/curl
+COPY --from=curl-builder /tmp/curl /usr/local/bin/curl
 
 # Set environment variables (same as main Dockerfile)
 ENV PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
