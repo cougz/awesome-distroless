@@ -1,0 +1,2 @@
+# This directory will contain tool-specific Dockerfiles
+# Part of Phase 1 Docker Distroless refactoring to extract hardcoded tool logic
