@@ -303,7 +303,7 @@ LABEL distroless.tools="${TOOLS}"
 LABEL org.opencontainers.image.description="Distroless base with tools: ${TOOLS}"
 LABEL org.opencontainers.image.title="Distroless Base with Tools"
 LABEL org.opencontainers.image.authors="cougz"
-LABEL org.opencontainers.image.source="https://github.com/cougz/docker-distroless-base"
+LABEL org.opencontainers.image.source="https://github.com/cougz/docker-distroless"
 LABEL org.opencontainers.image.base.name="scratch"
 LABEL org.opencontainers.image.version="${VERSION}"
 EOF

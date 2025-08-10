@@ -1,6 +1,6 @@
-# Docker Distroless Base Image
+# Docker Distroless Images
 
-Minimal, secure distroless base image built from scratch. **1.53MB** total size.
+Minimal, secure distroless images built from scratch. Base image **1.53MB**, with tools up to **12MB**.
 
 ## Features
 
@@ -12,15 +12,20 @@ Minimal, secure distroless base image built from scratch. **1.53MB** total size.
 ## Quick Start
 
 ```bash
-# Build
-./scripts/build.sh 0.1.0
+# Build base image
+./scripts/build.sh 0.5.0
+
+# Build with tools  
+./scripts/build.sh 0.5.0 curl
+./scripts/build.sh 0.5.0 "curl,jq"
 
 # Push to GitHub Container Registry
 export GITHUB_TOKEN=your_token
-./scripts/publish.sh 0.1.0 your-username
+./scripts/publish.sh distroless-base:0.5.0 your-username
+./scripts/publish.sh distroless-curl:0.5.0 your-username
 
 # Use in Dockerfile
-FROM ghcr.io/your-username/distroless-base:0.1.0
+FROM ghcr.io/your-username/distroless-base:0.5.0
 COPY --chown=1000:1000 myapp /app/myapp
 ENTRYPOINT ["/app/myapp"]
 ```
@@ -41,10 +46,43 @@ ENTRYPOINT ["/app/myapp"]
 | Debian Slim | ~70MB | ❌ | ❌ | Complex dependencies |
 | Google Distroless | ~2-20MB | ✅ | ✅ | Language-specific |
 
+## Tools Support
+
+You can extend the base image with additional tools:
+
+```bash
+# Build base image only
+./scripts/build.sh 0.5.0
+
+# Build with curl (HTTPS enabled)
+./scripts/build.sh 0.5.0 curl
+
+# Build with multiple tools
+./scripts/build.sh 0.5.0 "curl,jq"
+```
+
+### Available Tools
+
+- `curl` - HTTP client with full HTTPS/SSL support (**9.97MB**)
+- `jq` - JSON processor (**3.78MB**)
+- `dig` - DNS lookup utility (**1.67MB** - has many dependencies, not recommended)
+
+### Adding New Tools
+
+1. Create `tools/newtool.Dockerfile` following the pattern
+2. Add build logic to `scripts/build.sh` (in the case statements)  
+3. Test: `./scripts/build.sh 0.5.0 newtool`
+
+### Image Naming
+
+- Base image: `distroless-base:0.5.0`
+- With curl: `distroless-curl:0.5.0` 
+- With multiple tools: `distroless-curl-jq:0.5.0` (alphabetically sorted)
+
 ## Scripts
 
-- `build.sh [VERSION]` - Build image locally
-- `publish.sh [VERSION] [NAMESPACE]` - Push to ghcr.io
+- `build.sh [VERSION] [TOOLS]` - Build images locally
+- `publish.sh <IMAGE_TAG> [NAMESPACE] [REGISTRY]` - Push to registry
 
 ## License
 
