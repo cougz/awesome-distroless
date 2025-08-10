@@ -155,7 +155,7 @@ else
         # Start with the base builder stage (same as main Dockerfile)
         cat > "${TEMP_DOCKERFILE}" << 'EOF'
 # Multi-stage build for distroless base with multiple tools
-FROM debian:12-slim AS base-builder
+FROM debian:trixie-slim AS base-builder
 
 # Install ca-certificates and timezone data
 RUN apt-get update && \
@@ -180,12 +180,13 @@ EOF
                     cat >> "${TEMP_DOCKERFILE}" << 'EOF'
 
 # Build curl
-FROM debian:12-slim AS curl-builder
+FROM debian:trixie-slim AS curl-builder
 ARG CURL_VERSION=8.11.1
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         build-essential \
         libssl-dev \
+        zlib1g-dev \
         wget \
         ca-certificates \
         pkg-config && \
@@ -194,17 +195,17 @@ RUN apt-get update && \
 RUN wget -q https://curl.se/download/curl-${CURL_VERSION}.tar.gz && \
     tar xzf curl-${CURL_VERSION}.tar.gz && \
     cd curl-${CURL_VERSION} && \
-    LDFLAGS="-static" PKG_CONFIG="pkg-config --static" \
     ./configure \
         --disable-shared \
         --enable-static \
         --disable-ldap \
         --disable-ipv6 \
-        --with-ssl \
-        --without-zlib \
+        --with-openssl \
+        --with-zlib \
         --disable-docs \
         --disable-manual \
-        --without-libpsl && \
+        --without-libpsl \
+        --with-ca-bundle=/etc/ssl/certs/ca-certificates.crt && \
     make -j$(nproc) && \
     strip src/curl && \
     cp src/curl /tmp/curl
@@ -215,7 +216,7 @@ EOF
                     cat >> "${TEMP_DOCKERFILE}" << 'EOF'
 
 # Download jq
-FROM debian:12-slim AS jq-builder
+FROM debian:trixie-slim AS jq-builder
 RUN apt-get update && \
     apt-get install -y --no-install-recommends wget ca-certificates binutils && \
     apt-get clean && \
@@ -247,6 +248,8 @@ COPY --from=base-builder /lib/x86_64-linux-gnu/libc.so.6 /lib/x86_64-linux-gnu/l
 COPY --from=base-builder /lib/x86_64-linux-gnu/libpthread.so.0 /lib/x86_64-linux-gnu/libpthread.so.0
 COPY --from=base-builder /lib/x86_64-linux-gnu/libssl.so.3 /lib/x86_64-linux-gnu/libssl.so.3
 COPY --from=base-builder /lib/x86_64-linux-gnu/libcrypto.so.3 /lib/x86_64-linux-gnu/libcrypto.so.3
+COPY --from=base-builder /lib/x86_64-linux-gnu/libz.so.1 /lib/x86_64-linux-gnu/libz.so.1
+COPY --from=base-builder /usr/lib/x86_64-linux-gnu/libzstd.so.1 /usr/lib/x86_64-linux-gnu/libzstd.so.1
 
 EOF
 

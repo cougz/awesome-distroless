@@ -1,6 +1,6 @@
 # Multi-stage build for minimal distroless base image
-# Stage 1: Prepare essential files using Debian 12
-FROM debian:12-slim AS builder
+# Stage 1: Prepare essential files using Debian 13
+FROM debian:trixie-slim AS builder
 
 # Install ca-certificates and timezone data
 RUN apt-get update && \

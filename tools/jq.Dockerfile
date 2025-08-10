@@ -1,5 +1,5 @@
 # Multi-stage build that extends the base distroless build process
-FROM debian:12-slim AS base-builder
+FROM debian:trixie-slim AS base-builder
 
 # Install ca-certificates and timezone data (same as main Dockerfile)
 RUN apt-get update && \
@@ -15,7 +15,7 @@ RUN echo "app:x:1000:1000:app user:/home/app:/sbin/nologin" > /etc/passwd.minima
 RUN echo "hosts: files dns" > /etc/nsswitch.conf
 
 # Stage 2: Download jq binary only
-FROM debian:12-slim AS jq-builder
+FROM debian:trixie-slim AS jq-builder
 RUN apt-get update && \
     apt-get install -y --no-install-recommends wget ca-certificates binutils && \
     apt-get clean && \

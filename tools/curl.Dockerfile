@@ -1,6 +1,6 @@
 # Multi-stage build that extends the base distroless build process
 # Stage 1: Use same base as main Dockerfile
-FROM debian:12-slim AS base-builder
+FROM debian:trixie-slim AS base-builder
 
 # Install ca-certificates and timezone data (same as main Dockerfile)
 RUN apt-get update && \
@@ -16,7 +16,7 @@ RUN echo "app:x:1000:1000:app user:/home/app:/sbin/nologin" > /etc/passwd.minima
 RUN echo "hosts: files dns" > /etc/nsswitch.conf
 
 # Stage 2: Build static curl binary only
-FROM debian:12-slim AS curl-builder
+FROM debian:trixie-slim AS curl-builder
 
 ARG CURL_VERSION=8.11.1
 
@@ -24,6 +24,7 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         build-essential \
         libssl-dev \
+        zlib1g-dev \
         wget \
         ca-certificates \
         pkg-config && \
@@ -34,20 +35,23 @@ RUN apt-get update && \
 RUN wget -q https://curl.se/download/curl-${CURL_VERSION}.tar.gz && \
     tar xzf curl-${CURL_VERSION}.tar.gz && \
     cd curl-${CURL_VERSION} && \
-    LDFLAGS="-static" PKG_CONFIG="pkg-config --static" \
     ./configure \
         --disable-shared \
         --enable-static \
         --disable-ldap \
         --disable-ipv6 \
-        --with-ssl \
-        --without-zlib \
+        --with-openssl \
+        --with-zlib \
         --disable-docs \
         --disable-manual \
-        --without-libpsl && \
+        --without-libpsl \
+        --with-ca-bundle=/etc/ssl/certs/ca-certificates.crt && \
     make -j$(nproc) && \
     strip src/curl && \
-    cp src/curl /tmp/curl
+    cp src/curl /tmp/curl && \
+    echo "Checking curl dependencies:" && \
+    ldd src/curl && \
+    echo "Dependencies checked"
 
 # Stage 3: Build the final distroless image from scratch
 FROM scratch
@@ -64,6 +68,8 @@ COPY --from=base-builder /lib/x86_64-linux-gnu/libc.so.6 /lib/x86_64-linux-gnu/l
 COPY --from=base-builder /lib/x86_64-linux-gnu/libpthread.so.0 /lib/x86_64-linux-gnu/libpthread.so.0
 COPY --from=base-builder /lib/x86_64-linux-gnu/libssl.so.3 /lib/x86_64-linux-gnu/libssl.so.3
 COPY --from=base-builder /lib/x86_64-linux-gnu/libcrypto.so.3 /lib/x86_64-linux-gnu/libcrypto.so.3
+COPY --from=base-builder /lib/x86_64-linux-gnu/libz.so.1 /lib/x86_64-linux-gnu/libz.so.1
+COPY --from=base-builder /usr/lib/x86_64-linux-gnu/libzstd.so.1 /usr/lib/x86_64-linux-gnu/libzstd.so.1
 
 # Copy only the curl binary
 COPY --from=curl-builder /tmp/curl /usr/local/bin/curl
