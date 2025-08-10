@@ -1,6 +1,6 @@
 # Docker Distroless Images
 
-Minimal, secure distroless images built from scratch. Base image **1.53MB**, with tools up to **12MB**.
+Minimal, secure distroless images built from scratch. Base image **1.53MB**, with optional tools.
 
 ## Features
 
@@ -48,7 +48,7 @@ ENTRYPOINT ["/app/myapp"]
 
 ## Tools Support
 
-You can extend the base image with additional tools:
+You can extend the base image with additional tools for specific use cases:
 
 ```bash
 # Build base image only
@@ -57,15 +57,33 @@ You can extend the base image with additional tools:
 # Build with curl (HTTPS enabled)
 ./scripts/build.sh 0.5.0 curl
 
-# Build with multiple tools
+# Build with multiple tools (perfect for API processing)
 ./scripts/build.sh 0.5.0 "curl,jq"
 ```
 
 ### Available Tools
 
-- `curl` - HTTP client with full HTTPS/SSL support (**9.97MB**)
-- `jq` - JSON processor (**3.78MB**)
-- `dig` - DNS lookup utility (**1.67MB** - has many dependencies, not recommended)
+- **`curl`** - HTTP client with full HTTPS/SSL support (**9.97MB**)
+  - Statically compiled with OpenSSL 3.0.17
+  - Perfect for API calls, health checks, file downloads
+  - Supports all modern TLS/SSL protocols
+  
+- **`jq`** - JSON processor (**3.78MB**)
+  - Latest version (1.8.1) 
+  - Ideal for parsing API responses
+  - Combines perfectly with curl for API workflows
+
+### Common Use Cases
+
+```bash
+# API monitoring container
+./scripts/build.sh 0.5.0 "curl,jq"
+docker run --rm distroless-curl-jq:0.5.0 curl -s https://api.github.com/zen
+
+# Simple health checker  
+./scripts/build.sh 0.5.0 curl
+docker run --rm distroless-curl:0.5.0 curl -f https://example.com/health
+```
 
 ### Adding New Tools
 
@@ -77,6 +95,7 @@ You can extend the base image with additional tools:
 
 - Base image: `distroless-base:0.5.0`
 - With curl: `distroless-curl:0.5.0` 
+- With jq: `distroless-jq:0.5.0`
 - With multiple tools: `distroless-curl-jq:0.5.0` (alphabetically sorted)
 
 ## Scripts

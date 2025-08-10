@@ -226,20 +226,6 @@ RUN wget -q -L "https://github.com/jqlang/jq/releases/latest/download/jq-linux64
 
 EOF
                     ;;
-                dig)
-                    cat >> "${TEMP_DOCKERFILE}" << 'EOF'
-
-# Get dig
-FROM debian:12-slim AS dig-builder
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends dnsutils binutils && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
-RUN cp /usr/bin/dig /tmp/dig && \
-    strip /tmp/dig
-
-EOF
-                    ;;
             esac
         done
 
@@ -275,11 +261,6 @@ EOF
                 jq)
                     cat >> "${TEMP_DOCKERFILE}" << 'EOF'
 COPY --from=jq-builder /tmp/jq /usr/local/bin/jq
-EOF
-                    ;;
-                dig)
-                    cat >> "${TEMP_DOCKERFILE}" << 'EOF'
-COPY --from=dig-builder /tmp/dig /usr/local/bin/dig
 EOF
                     ;;
             esac
@@ -373,13 +354,6 @@ if [ -n "${TOOLS}" ]; then
                     echo -e "${GREEN}  ✓ jq is working${NC}"
                 else
                     echo -e "${RED}  ✗ jq test failed${NC}"
-                fi
-                ;;
-            dig)
-                if docker run --rm "${IMAGE_TAG}" dig -v >/dev/null 2>&1; then
-                    echo -e "${GREEN}  ✓ dig is working${NC}"
-                else
-                    echo -e "${RED}  ✗ dig test failed${NC}"
                 fi
                 ;;
             *)
