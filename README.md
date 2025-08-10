@@ -75,49 +75,21 @@ The new tool manager provides a clean interface for managing tools:
 ### Available Tools
 
 **Utilities:**
-- `curl` (v8.11.1) - HTTPS-enabled HTTP client
-- `jq` (v1.7.1) - JSON processor
+- `curl` - HTTPS-enabled HTTP client
+- `jq` - JSON processor
 
 **Development Tools:**
-- `git` (v2.50.1) - Version control system  
-- `go` (v1.24.6) - Go programming language
-- `node` (v24.5.0) - Node.js runtime with npm
+- `git` - Version control system  
+- `go` - Go programming language
+- `node` - Node.js runtime with npm
 
 **Database:**
-- `postgres` (v17.2) - PostgreSQL database server with complete toolset
+- `postgres` - PostgreSQL database server with complete toolset
 
 ### Tool Categories
 - **utility**: General-purpose utilities like curl, jq
 - **development**: Development tools like git, go, node
 - **database**: Database servers like postgres
-
-## Development Workflow
-
-The development tool images enable secure build environments:
-
-```bash
-# Clone and build a Go application
-docker run --rm -v $(pwd):/workspace -w /workspace \
-  distroless-git:0.2.0 \
-  git clone https://github.com/your-org/your-app.git
-
-# Build a Node.js application  
-docker run --rm -v $(pwd)/your-app:/workspace -w /workspace \
-  distroless-node:0.2.0 \
-  node -e "console.log('Building app...')"
-
-# Compile a Go binary
-docker run --rm -v $(pwd)/your-app:/workspace -w /workspace \
-  distroless-go:0.2.0 \
-  go build -o app ./cmd/main.go
-```
-
-## Image Contents
-
-- `/etc/ssl/certs/` - CA certificates for TLS/SSL
-- `/usr/share/zoneinfo/` - Timezone database
-- `/etc/passwd`, `/etc/group` - Non-root user config (app:1000)
-- Environment: `PATH`, `HOME=/home/app`, `USER=app`, `TZ=UTC`
 
 ## Configuration System
 
@@ -178,36 +150,6 @@ build:
 
 3. **No code changes needed** - The tool is automatically discovered!
 
-## Common Use Cases
-
-```bash
-# HTTP client with JSON processing (legacy multi-tool)
-./scripts/build.sh 0.2.0 "curl,jq"
-docker run --rm distroless-curl-jq:0.2.0 curl -s https://api.github.com/zen
-
-# Simple health checker  
-./scripts/build.sh 0.2.0 curl
-docker run --rm distroless-curl:0.2.0 curl -f https://example.com/health
-
-# Development environment for Go applications
-./scripts/build.sh 0.2.0 go
-docker run --rm -v $(pwd):/workspace distroless-go:0.2.0 go version
-
-# JSON processing
-./scripts/build.sh 0.2.0 jq
-echo '{"name":"test"}' | docker run --rm -i distroless-jq:0.2.0 jq '.name'
-
-# PostgreSQL database server
-./scripts/build.sh 0.2.0 postgres
-docker run --rm distroless-postgres:0.2.0 postgres --version
-```
-
-## Image Naming
-
-- **Base image**: `distroless-base:0.2.0`
-- **Single tools**: `distroless-{tool}:0.2.0` (e.g., `distroless-curl:0.2.0`)
-- **Multiple tools**: `distroless-{tool1}-{tool2}:0.2.0` (alphabetically sorted, legacy system)
-
 ## Comparison
 
 | Image | Size | Distroless | Rootless | Config-Driven |
@@ -258,21 +200,6 @@ docker-distroless/
 │       └── postgres.yml
 ├── Dockerfile               # Base distroless image
 └── README.md
-```
-
-## Migration from v0.1.x
-
-The new system maintains full backward compatibility:
-
-```bash
-# Old way (still works)
-./scripts/build.sh 0.2.0 curl
-
-# New way (recommended)  
-./scripts/tool-manager.sh build curl 0.2.0
-
-# Multi-tools (temporarily uses legacy system)
-./scripts/build.sh 0.2.0 "curl,jq"
 ```
 
 ## Contributing
