@@ -1,0 +1,30 @@
+# Docker Compose for pocket-id distroless stack
+name: "pocket-id"
+
+services:
+  database:
+    image: distroless-postgres
+    environment:
+      POSTGRES_DB: pocketid
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: always
+
+  app:
+    depends_on:
+      - database
+    image: distroless-pocket-id
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@database:5432/pocketid
+      APP_URL: "http://localhost:3000"
+    volumes:
+      - pocket_data:/app/data
+    restart: always
+
+volumes:
+  postgres_data:
+  pocket_data:

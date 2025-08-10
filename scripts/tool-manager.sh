@@ -104,6 +104,15 @@ is_multi_tool() {
     [[ "$1" == *","* ]]
 }
 
+# Ensure distroless base image exists
+ensure_base_image() {
+    if ! docker image inspect distroless-base:0.2.0 >/dev/null 2>&1; then
+        echo -e "${YELLOW}Base image distroless-base:0.2.0 not found${NC}" >&2
+        echo -e "${RED}Please build base image first: ./scripts/base-manager.sh build${NC}" >&2
+        exit 1
+    fi
+}
+
 # Build single tool image
 build_single_tool() {
     local tool_name="$1"
@@ -115,6 +124,9 @@ build_single_tool() {
     local tool_version=$(yq eval '.version' "${config_file}")
     
     echo -e "${GREEN}Building ${tool_name} v${tool_version}...${NC}"
+    
+    # Ensure base image exists
+    ensure_base_image
     
     # Build image using existing Dockerfile
     local image_name="distroless-${tool_name}"
@@ -282,6 +294,19 @@ main() {
     case "${command}" in
         list|ls)
             list_tools
+            ;;
+        names)
+            # Simple tool names only - for build.sh integration
+            if [ -d "${CONFIG_DIR}" ]; then
+                for config_file in "${CONFIG_DIR}"/*.yml; do
+                    if [ -f "${config_file}" ]; then
+                        local tool_name=$(yq eval '.name' "${config_file}")
+                        if tool_exists "${tool_name}"; then
+                            echo "${tool_name}"
+                        fi
+                    fi
+                done
+            fi
             ;;
         build)
             if [ $# -eq 0 ]; then

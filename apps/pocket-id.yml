@@ -1,0 +1,31 @@
+name: pocket-id
+description: "Pocket ID authentication service - single-purpose app image"
+tools: 
+  - node
+  - go  
+  - git
+
+services:
+  app:
+    # Uses the built distroless-pocket-id image
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgres://postgres:postgres@database:5432/pocketid
+    volumes:
+      - "./app:/app"
+    
+  database:
+    image: distroless-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: pocketid
+      POSTGRES_USER: postgres  
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - "postgres_data:/var/lib/postgresql/data"
+
+volumes:
+  postgres_data:

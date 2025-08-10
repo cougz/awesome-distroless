@@ -1,5 +1,6 @@
 #!/bin/bash
-# New build.sh - delegates to tool manager for backward compatibility
+# Build.sh - Entry point that delegates to appropriate managers
+# Provides backward compatibility while routing to the new 3-tier architecture
 set -euo pipefail
 
 # Color output
@@ -19,19 +20,24 @@ PROJECT_DIR="$(dirname "${SCRIPT_DIR}")"
 cd "${PROJECT_DIR}"
 
 show_usage() {
-    echo "Usage: $0 [VERSION] [TOOLS]"
+    echo "Build Entry Point - Delegates to Appropriate Managers"
+    echo ""
+    echo "Usage: $0 [VERSION] [TOOLS|APP]"
     echo ""
     echo "Arguments:"
     echo "  VERSION     Image version (default: 0.2.0)"
-    echo "  TOOLS       Comma-separated tools to add (optional)"
+    echo "  TOOLS|APP   Tool name, comma-separated tools, or app name"
     echo ""
     echo "Examples:"
-    echo "  $0 0.2.0                        # Build base image only"
-    echo "  $0 0.2.0 curl                   # Build curl image"
-    echo "  $0 0.2.0 \"curl,jq\"              # Build curl + jq image"
+    echo "  $0 0.2.0                        # Build base image (→ base-manager.sh)"
+    echo "  $0 0.2.0 curl                   # Build curl tool (→ tool-manager.sh)"
+    echo "  $0 0.2.0 \"curl,jq\"              # Build multi-tool (→ tool-manager.sh)"
+    echo "  $0 0.2.0 pocket-id               # Build app stack (→ app-manager.sh)"
     echo ""
-    echo "Available tools:"
-    "${SCRIPT_DIR}/tool-manager.sh" list | grep -v "Available tools:" || echo "    Run './scripts/tool-manager.sh list' for details"
+    echo "Direct manager access:"
+    echo "  ./scripts/base-manager.sh        # Base image management"
+    echo "  ./scripts/tool-manager.sh        # Tool image management"
+    echo "  ./scripts/app-manager.sh         # Application stack management"
     exit 1
 }
 
@@ -45,8 +51,34 @@ echo -e "${YELLOW}Version:${NC} ${VERSION}"
 echo -e "${YELLOW}Tools:${NC} ${TOOLS:-"none (base image only)"}"
 echo ""
 
+# Determine which manager to use based on input
 if [ -z "${TOOLS}" ]; then
-    # Build base image as before
+    # No tools specified - build base image via base-manager
+    echo -e "${BLUE}Delegating to base-manager.sh...${NC}"
+    exec "${SCRIPT_DIR}/base-manager.sh" build "${VERSION}"
+elif [[ "${TOOLS}" == *","* ]]; then
+    # Multi-tool build - use tool-manager
+    echo -e "${BLUE}Delegating to tool-manager.sh (multi-tool)...${NC}"
+    exec "${SCRIPT_DIR}/tool-manager.sh" build "${TOOLS}"
+elif "${SCRIPT_DIR}/tool-manager.sh" names 2>/dev/null | grep -q "^${TOOLS}$"; then
+    # Single tool - use tool-manager
+    echo -e "${BLUE}Delegating to tool-manager.sh (single tool)...${NC}"
+    exec "${SCRIPT_DIR}/tool-manager.sh" build "${TOOLS}"
+elif [ -f "${PROJECT_DIR}/apps/${TOOLS}.yml" ]; then
+    # Application stack - use app-manager
+    echo -e "${BLUE}Delegating to app-manager.sh (application)...${NC}"
+    exec "${SCRIPT_DIR}/app-manager.sh" build "${TOOLS}"
+else
+    echo -e "${RED}Error: Unknown target '${TOOLS}'${NC}" >&2
+    echo -e "${YELLOW}Not found as:${NC}" >&2
+    echo -e "  - Tool (check: ./scripts/tool-manager.sh list)" >&2
+    echo -e "  - App (check: ./scripts/app-manager.sh list)" >&2
+    exit 1
+fi
+
+# The rest is legacy code that won't be reached due to exec above
+if false; then
+    # Legacy base image build code
     echo -e "${BLUE}Building base image...${NC}"
     
     if docker build \
@@ -73,44 +105,4 @@ if [ -z "${TOOLS}" ]; then
         echo -e "${RED}✗ Base image build failed!${NC}"
         exit 1
     fi
-else
-    # Use tool manager for tools
-    IFS=',' read -ra TOOL_ARRAY <<< "${TOOLS}"
-    
-    if [ ${#TOOL_ARRAY[@]} -eq 1 ]; then
-        # Single tool - use new tool manager
-        echo -e "${BLUE}Using new tool manager for ${TOOL_ARRAY[0]}...${NC}"
-        "${SCRIPT_DIR}/tool-manager.sh" build "${TOOL_ARRAY[0]}" "${VERSION}"
-        "${SCRIPT_DIR}/tool-manager.sh" test "${TOOL_ARRAY[0]}" "${VERSION}"
-        
-        echo ""
-        echo -e "${GREEN}Build complete!${NC}"
-        echo ""
-        echo "Image includes tool: ${TOOLS}"
-        echo ""
-        echo "To use this image:"
-        echo -e "${YELLOW}  docker run --rm distroless-${TOOL_ARRAY[0]}:${VERSION} ${TOOL_ARRAY[0]} --version${NC}"
-    else
-        # Multiple tools - fallback to old system for now
-        echo -e "${YELLOW}Multiple tools detected: ${TOOLS}${NC}"
-        echo -e "${YELLOW}Using legacy multi-tool build system...${NC}"
-        
-        # Use the backup build script for multi-tool builds
-        if [ -f "${SCRIPT_DIR}/build.sh.backup" ]; then
-            exec "${SCRIPT_DIR}/build.sh.backup" "${VERSION}" "${TOOLS}"
-        else
-            echo -e "${RED}Error: Legacy build system not available${NC}"
-            echo -e "${YELLOW}Please build tools individually:${NC}"
-            for tool in "${TOOL_ARRAY[@]}"; do
-                echo -e "${YELLOW}  $0 ${VERSION} ${tool}${NC}"
-            done
-            exit 1
-        fi
-    fi
-fi
-
-if [ -n "${TOOLS}" ]; then
-    echo ""
-    echo "To publish to registry, run:"
-    echo -e "${YELLOW}  ./scripts/publish.sh distroless-${TOOLS}:${VERSION}${NC}"
 fi
