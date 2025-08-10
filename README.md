@@ -24,13 +24,6 @@ Traditional container images include entire operating systems with hundreds of p
 
 **Result:** Your application is the ONLY executable in the container. An attacker who gains access has no tools to establish persistence, explore the system, or download malware. They can't even list files without your application's help.
 
-**Perfect for:**
-- Production microservices
-- Security-critical applications  
-- Compliance environments (PCI, HIPAA)
-- Minimizing CVE exposure
-- Reducing container image size
-
 ## Quick Start
 
 ```bash
