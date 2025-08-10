@@ -1,0 +1,58 @@
+# Docker
+*.tar
+*.tar.gz
+docker-compose.override.yml
+.docker/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Build artifacts
+build/
+dist/
+out/
+
+# Logs
+*.log
+logs/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Testing
+coverage/
+.coverage
+*.cover
+.pytest_cache/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+
+# Backup files
+*.bak
+*.backup
+*.old
+
+# Package files
+*.deb
+*.rpm
+*.dmg
+*.iso
+*.jar
+
+# Security
+*.key
+*.pem
+*.crt
+*.p12
+secrets/
