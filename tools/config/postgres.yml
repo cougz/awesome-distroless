@@ -1,5 +1,5 @@
 name: postgres
-version: "17.2"
+version: "17.5"
 description: "PostgreSQL database server with complete toolset"
 category: "database"
 build:
