@@ -34,12 +34,12 @@ ENTRYPOINT ["/app/myapp"]
 
 ## Comparison
 
-| Image | Size | Shell | Rootless | Use Case |
-|-------|------|-------|----------|----------|
-| **This Image** | **1.24MB** | ❌ | ✅ | Production, security-critical |
-| Alpine | ~5MB | ✅ | ❌ | Development, debugging |
-| Debian Slim | ~70MB | ✅ | ❌ | Complex dependencies |
-| Google Distroless | ~2-20MB | ❌ | ✅ | Language-specific |
+| Image | Size | Distroless | Rootless | Use Case |
+|-------|------|------------|----------|----------|
+| **This Image** | **1.24MB** | ✅ | ✅ | Production, security-critical |
+| Alpine | ~5MB | ❌ | ❌ | Development, debugging |
+| Debian Slim | ~70MB | ❌ | ❌ | Complex dependencies |
+| Google Distroless | ~2-20MB | ✅ | ✅ | Language-specific |
 
 ## Scripts
 
