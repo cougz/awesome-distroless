@@ -48,4 +48,4 @@ ENTRYPOINT ["/app/myapp"]
 
 ## License
 
-MIT
+[MIT](LICENSE)
