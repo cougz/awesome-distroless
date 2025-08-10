@@ -80,7 +80,6 @@ get_tool_config() {
 # Generate Dockerfile from template
 generate_dockerfile() {
     local tool_name="$1"
-    local version="$2"
     local config_file=$(get_tool_config "${tool_name}")
     local output_file="${TEMP_DIR}/${tool_name}.Dockerfile"
     
@@ -335,33 +334,299 @@ EOF
     echo "${output_file}"
 }
 
+# Check if tools list contains comma (multi-tool build)
+is_multi_tool() {
+    [[ "$1" == *","* ]]
+}
+
+# Generate multi-tool Dockerfile
+generate_multi_dockerfile() {
+    local tools_list="$1"
+    local output_file="${TEMP_DIR}/multi-tools.Dockerfile"
+    
+    echo -e "${BLUE}Generating multi-tool Dockerfile for ${tools_list}...${NC}" >&2
+    
+    # Split tools into array
+    IFS=',' read -ra TOOLS <<< "${tools_list}"
+    
+    # Validate all tools exist
+    for tool in "${TOOLS[@]}"; do
+        get_tool_config "${tool}" >/dev/null
+    done
+    
+    # Start Dockerfile
+    cat > "${output_file}" << 'EOF'
+# Multi-tool Distroless Image
+# Based on https://github.com/cougz/docker-distroless
+
+# Stage 1: Base builder
+FROM debian:trixie-slim AS base-builder
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends ca-certificates tzdata && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN echo "app:x:1000:1000:app user:/home/app:/sbin/nologin" > /etc/passwd.minimal && \
+    echo "app:x:1000:" > /etc/group.minimal
+
+RUN echo "hosts: files dns" > /etc/nsswitch.conf
+
+# Stage 2: Tool builder
+FROM debian:trixie-slim AS tool-builder
+
+EOF
+
+    # Collect all build dependencies
+    local all_build_deps=()
+    local all_runtime_libs=()
+    
+    for tool in "${TOOLS[@]}"; do
+        local config_file=$(get_tool_config "${tool}")
+        local build_deps=$(yq eval '.build.build_dependencies | join(" ")' "${config_file}")
+        local runtime_libs=$(yq eval '.build.runtime_libraries[]?' "${config_file}" 2>/dev/null || echo "")
+        
+        # Add to arrays (avoiding duplicates)
+        for dep in $build_deps; do
+            if [[ ! " ${all_build_deps[*]} " =~ " ${dep} " ]]; then
+                all_build_deps+=("${dep}")
+            fi
+        done
+        
+        while IFS= read -r lib; do
+            if [[ -n "${lib}" && ! " ${all_runtime_libs[*]} " =~ " ${lib} " ]]; then
+                all_runtime_libs+=("${lib}")
+            fi
+        done <<< "${runtime_libs}"
+    done
+    
+    # Install build dependencies
+    echo "RUN apt-get update && \\" >> "${output_file}"
+    echo "    apt-get install -y --no-install-recommends ${all_build_deps[*]} && \\" >> "${output_file}"
+    echo "    apt-get clean && \\" >> "${output_file}"
+    echo "    rm -rf /var/lib/apt/lists/*" >> "${output_file}"
+    echo "" >> "${output_file}"
+    
+    # Build each tool
+    for tool in "${TOOLS[@]}"; do
+        local config_file=$(get_tool_config "${tool}")
+        local tool_version=$(yq eval '.version' "${config_file}")
+        local build_type=$(yq eval '.build.type' "${config_file}")
+        local download_url=$(yq eval '.build.url' "${config_file}" | sed "s/{version}/${tool_version}/g")
+        local binary_path=$(yq eval '.build.binary_path' "${config_file}")
+        
+        echo "# Build ${tool}" >> "${output_file}"
+        
+        if [[ "${build_type}" == "source" ]]; then
+            local configure_flags=$(yq eval '.build.configure_flags | join(" ")' "${config_file}")
+            local custom_build_steps=$(yq eval '.build.custom_build_steps[]?' "${config_file}" 2>/dev/null || echo "")
+            
+            # Determine archive type
+            local archive_name="${tool}.tar.gz"
+            local tar_flags="-xzf"
+            if [[ "${download_url}" == *".tar.bz2"* ]]; then
+                archive_name="${tool}.tar.bz2"
+                tar_flags="-xjf"
+            fi
+            
+            cat >> "${output_file}" << EOF
+RUN wget -q "${download_url}" -O /tmp/${archive_name} && \\
+    cd /tmp && \\
+    tar ${tar_flags} ${archive_name} && \\
+    cd ${tool}* || cd *${tool}* && \\
+EOF
+            
+            # Add custom build steps
+            if [[ -n "${custom_build_steps}" ]]; then
+                while IFS= read -r step; do
+                    if [[ -n "${step}" ]]; then
+                        echo "    ${step} && \\" >> "${output_file}"
+                    fi
+                done <<< "${custom_build_steps}"
+            fi
+            
+            cat >> "${output_file}" << EOF
+    ./configure --prefix=/tmp/${tool}-install ${configure_flags} && \\
+    make -j\$(nproc) && \\
+    make install && \\
+    strip /tmp/${tool}-install/bin/* || true
+
+EOF
+        else
+            # Binary download
+            if [[ "${tool}" == "go" ]]; then
+                cat >> "${output_file}" << EOF
+RUN wget -q "${download_url}" -O /tmp/go.tar.gz && \\
+    cd /tmp && \\
+    tar -xzf go.tar.gz && \\
+    strip /tmp/go/bin/* || true
+
+EOF
+            elif [[ "${tool}" == "node" ]]; then
+                cat >> "${output_file}" << EOF
+RUN wget -q "${download_url}" -O /tmp/node.tar.xz && \\
+    cd /tmp && \\
+    tar -xJf node.tar.xz && \\
+    mv node-v*-linux-x64 node && \\
+    strip /tmp/node/bin/* || true
+
+EOF
+            else
+                cat >> "${output_file}" << EOF
+RUN wget -q "${download_url}" -O ${binary_path} && \\
+    chmod +x ${binary_path} && \\
+    strip ${binary_path} || true
+
+EOF
+            fi
+        fi
+    done
+    
+    # Final stage
+    cat >> "${output_file}" << 'EOF'
+# Stage 3: Final distroless image
+FROM scratch
+
+# Copy base files
+COPY --from=base-builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+COPY --from=base-builder /usr/share/zoneinfo /usr/share/zoneinfo
+COPY --from=base-builder /etc/passwd.minimal /etc/passwd
+COPY --from=base-builder /etc/group.minimal /etc/group
+COPY --from=base-builder /etc/nsswitch.conf /etc/nsswitch.conf
+
+# Copy essential libraries
+COPY --from=base-builder /lib64/ld-linux-x86-64.so.2 /lib64/ld-linux-x86-64.so.2
+COPY --from=base-builder /lib/x86_64-linux-gnu/libc.so.6 /lib/x86_64-linux-gnu/libc.so.6
+COPY --from=base-builder /lib/x86_64-linux-gnu/libpthread.so.0 /lib/x86_64-linux-gnu/libpthread.so.0
+
+EOF
+
+    # Add runtime libraries
+    if [[ ${#all_runtime_libs[@]} -gt 0 ]]; then
+        echo "# Runtime libraries" >> "${output_file}"
+        for lib in "${all_runtime_libs[@]}"; do
+            echo "COPY --from=base-builder ${lib} ${lib}" >> "${output_file}"
+        done
+        echo "" >> "${output_file}"
+    fi
+    
+    # Copy tools
+    echo "# Copy tools" >> "${output_file}"
+    for tool in "${TOOLS[@]}"; do
+        local config_file=$(get_tool_config "${tool}")
+        local build_type=$(yq eval '.build.type' "${config_file}")
+        local binary_path=$(yq eval '.build.binary_path' "${config_file}")
+        local install_path=$(yq eval '.build.install_path' "${config_file}")
+        
+        if [[ "${build_type}" == "source" ]]; then
+            echo "COPY --from=tool-builder /tmp/${tool}-install ${install_path}" >> "${output_file}"
+        else
+            if [[ "${tool}" == "go" ]]; then
+                echo "COPY --from=tool-builder /tmp/go /usr/local/go" >> "${output_file}"
+            elif [[ "${tool}" == "node" ]]; then
+                echo "COPY --from=tool-builder /tmp/node /usr/local/node" >> "${output_file}"
+            else
+                echo "COPY --from=tool-builder ${binary_path} ${install_path}" >> "${output_file}"
+            fi
+        fi
+    done
+    
+    # Environment and final settings
+    local tools_names=$(IFS=','; echo "${TOOLS[*]}")
+    cat >> "${output_file}" << EOF
+
+# Environment
+ENV PATH="/usr/local/go/bin:/usr/local/node/bin:/usr/local/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin"
+ENV GOROOT="/usr/local/go"
+ENV HOME="/home/app"
+ENV USER="app"
+ENV TZ="UTC"
+ENV SSL_CERT_FILE="/etc/ssl/certs/ca-certificates.crt"
+
+WORKDIR /home/app
+USER 1000:1000
+
+# Labels
+LABEL distroless.tools="${tools_names}"
+LABEL org.opencontainers.image.description="Distroless base with ${tools_names}"
+LABEL org.opencontainers.image.title="Distroless Multi-Tools"
+LABEL org.opencontainers.image.authors="cougz"
+LABEL org.opencontainers.image.source="https://github.com/cougz/docker-distroless"
+LABEL org.opencontainers.image.base.name="scratch"
+EOF
+    
+    echo -e "${GREEN}✓ Generated: ${output_file}${NC}" >&2
+    echo "${output_file}"
+}
+
 # Build tool image
 build_tool() {
-    local tool_name="$1"
-    local version="${2:-0.2.0}"
-    local config_file=$(get_tool_config "${tool_name}")
+    local tool_input="$1"
     
-    echo -e "${GREEN}Building ${tool_name} v$(yq eval '.version' "${config_file}")...${NC}"
+    # Check if this is a multi-tool build
+    if is_multi_tool "${tool_input}"; then
+        build_multi_tool "${tool_input}"
+        return
+    fi
+    
+    # Single tool build
+    local config_file=$(get_tool_config "${tool_input}")
+    
+    echo -e "${GREEN}Building ${tool_input} v$(yq eval '.version' "${config_file}")...${NC}"
     
     # Generate Dockerfile
-    local dockerfile=$(generate_dockerfile "${tool_name}" "${version}")
+    local dockerfile=$(generate_dockerfile "${tool_input}")
     
     # Build image
-    local image_name="distroless-${tool_name}"
-    local image_tag="${image_name}:${version}"
+    local image_name="distroless-${tool_input}"
+    local image_tag="${image_name}"
     
     echo -e "${BLUE}Building Docker image: ${image_tag}${NC}"
     
     if docker build \
         --platform linux/amd64 \
         --tag "${image_tag}" \
-        --label "org.opencontainers.image.version=${version}" \
         --label "org.opencontainers.image.created=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
         --file "${dockerfile}" \
         . ; then
         echo -e "${GREEN}✓ Build successful: ${image_tag}${NC}"
     else
-        echo -e "${RED}✗ Build failed for ${tool_name}${NC}" >&2
+        echo -e "${RED}✗ Build failed for ${tool_input}${NC}" >&2
+        exit 1
+    fi
+    
+    # Show image size
+    local size=$(docker image inspect "${image_tag}" --format='{{.Size}}' | numfmt --to=iec)
+    echo -e "${YELLOW}Image size: ${size}${NC}"
+    
+    # Cleanup generated Dockerfile
+    rm -f "${dockerfile}"
+}
+
+# Build multi-tool image
+build_multi_tool() {
+    local tools_list="$1"
+    
+    echo -e "${GREEN}Building multi-tool image with: ${tools_list}...${NC}"
+    
+    # Generate multi-tool Dockerfile
+    local dockerfile=$(generate_multi_dockerfile "${tools_list}")
+    
+    # Build image
+    local image_name="distroless-tools"
+    local image_tag="${image_name}"
+    
+    echo -e "${BLUE}Building Docker image: ${image_tag}${NC}"
+    
+    if docker build \
+        --platform linux/amd64 \
+        --tag "${image_tag}" \
+        --label "org.opencontainers.image.created=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+        --file "${dockerfile}" \
+        . ; then
+        echo -e "${GREEN}✓ Build successful: ${image_tag}${NC}"
+    else
+        echo -e "${RED}✗ Build failed for multi-tool image${NC}" >&2
         exit 1
     fi
     
@@ -376,10 +641,9 @@ build_tool() {
 # Test tool
 test_tool() {
     local tool_name="$1"
-    local version="${2:-0.2.0}"
     local config_file=$(get_tool_config "${tool_name}")
     
-    local image_tag="distroless-${tool_name}:${version}"
+    local image_tag="distroless-${tool_name}"
     local test_command=$(yq eval '.build.test_command' "${config_file}")
     
     echo -e "${BLUE}Testing ${tool_name}...${NC}"
@@ -399,18 +663,19 @@ show_usage() {
     echo "Usage: $0 <command> [arguments]"
     echo ""
     echo "Commands:"
-    echo "  list                    List all available tools"
-    echo "  build <tool> [version]  Build tool image (default version: 0.2.0)"
-    echo "  test <tool> [version]   Test tool image"
-    echo "  config <tool>           Show tool configuration"
-    echo "  help                    Show this help"
+    echo "  list                         List all available tools"
+    echo "  build <tool>                 Build single tool image"
+    echo "  build <tool1,tool2>          Build multi-tool image"
+    echo "  test <tool>                  Test tool image"
+    echo "  config <tool>                Show tool configuration"
+    echo "  help                         Show this help"
     echo ""
     echo "Examples:"
-    echo "  $0 list                 # List available tools"
-    echo "  $0 build curl           # Build curl with default version"
-    echo "  $0 build curl 0.3.0     # Build curl with specific version"
-    echo "  $0 test curl 0.3.0      # Test curl image"
-    echo "  $0 config git           # Show git configuration"
+    echo "  $0 list                      # List available tools"
+    echo "  $0 build curl                # Build curl image"
+    echo "  $0 build git,go,node         # Build multi-tool image with git, go, and node"
+    echo "  $0 test curl                 # Test curl image"
+    echo "  $0 config git                # Show git configuration"
     exit 1
 }
 
@@ -443,14 +708,14 @@ main() {
                 echo -e "${RED}Error: Tool name required${NC}" >&2
                 show_usage
             fi
-            build_tool "$1" "${2:-0.2.0}"
+            build_tool "$1"
             ;;
         test)
             if [ $# -eq 0 ]; then
                 echo -e "${RED}Error: Tool name required${NC}" >&2
                 show_usage
             fi
-            test_tool "$1" "${2:-0.2.0}"
+            test_tool "$1"
             ;;
         config|show)
             if [ $# -eq 0 ]; then
