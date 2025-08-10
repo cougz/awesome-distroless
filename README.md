@@ -69,7 +69,7 @@ You can extend the base image with additional tools for specific use cases:
 ### Common Use Cases
 
 ```bash
-# API monitoring container
+# HTTP client with JSON processing
 ./scripts/build.sh 0.5.0 "curl,jq"
 docker run --rm distroless-curl-jq:0.5.0 curl -s https://api.github.com/zen
 
