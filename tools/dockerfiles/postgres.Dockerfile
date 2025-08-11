@@ -40,6 +40,8 @@ RUN useradd -u 1000 -m app && \
 # Switch to UID 1000 and initialize database
 USER 1000
 RUN /tmp/postgres-install/bin/initdb -D /tmp/pgdata -U postgres --auth-local=trust --auth-host=trust && \
+    echo "host    all             all             0.0.0.0/0               trust" >> /tmp/pgdata/pg_hba.conf && \
+    echo "host    all             all             ::/0                    trust" >> /tmp/pgdata/pg_hba.conf && \
     /tmp/postgres-install/bin/postgres -D /tmp/pgdata -p 5433 -F & \
     sleep 5 && \
     /tmp/postgres-install/bin/psql -h localhost -p 5433 -U postgres -c "ALTER USER postgres PASSWORD 'postgres';" && \
@@ -49,19 +51,25 @@ RUN /tmp/postgres-install/bin/initdb -D /tmp/pgdata -U postgres --auth-local=tru
 # Switch back to root to modify configuration files
 USER root
 
-# Update PostgreSQL configuration files BEFORE copying data
-RUN sed -i "s/#listen_addresses = 'localhost'/listen_addresses = '*'/" /tmp/pgdata/postgresql.conf && \
-    sed -i "s/listen_addresses = 'localhost'/listen_addresses = '*'/" /tmp/pgdata/postgresql.conf && \
-    echo "port = 5432" >> /tmp/pgdata/postgresql.conf && \
-    echo "max_connections = 100" >> /tmp/pgdata/postgresql.conf && \
-    echo "shared_buffers = 128MB" >> /tmp/pgdata/postgresql.conf && \
-    echo "log_destination = 'stderr'" >> /tmp/pgdata/postgresql.conf
+# Update PostgreSQL configuration - overwrite the entire file with our settings
+RUN cat > /tmp/pgdata/postgresql.conf << 'EOF'
+# PostgreSQL configuration for distroless image
+listen_addresses = '*'
+port = 5432
+max_connections = 100
+shared_buffers = 128MB
+dynamic_shared_memory_type = posix
+max_wal_size = 1GB
+min_wal_size = 80MB
+log_timezone = 'UTC'
+datestyle = 'iso, mdy'
+timezone = 'UTC'
+default_text_search_config = 'pg_catalog.english'
+log_destination = 'stderr'
+logging_collector = off
+EOF
 
-RUN echo "# TYPE  DATABASE        USER            ADDRESS                 METHOD" > /tmp/pgdata/pg_hba.conf && \
-    echo "local   all             all                                     trust" >> /tmp/pgdata/pg_hba.conf && \
-    echo "host    all             all             127.0.0.1/32            md5" >> /tmp/pgdata/pg_hba.conf && \
-    echo "host    all             all             ::1/128                 md5" >> /tmp/pgdata/pg_hba.conf && \
-    echo "host    all             all             0.0.0.0/0               md5" >> /tmp/pgdata/pg_hba.conf
+# pg_hba.conf already configured after initdb, no need to overwrite
 
 # Now copy the configured data directory to final location
 RUN chmod 700 /tmp/pgdata && \
@@ -122,6 +130,6 @@ LABEL org.opencontainers.image.authors="cougz"
 LABEL org.opencontainers.image.source="https://github.com/cougz/docker-distroless"
 LABEL org.opencontainers.image.base.name="scratch"
 
-# Start PostgreSQL directly
+# Start PostgreSQL directly with listen_addresses parameter and authentication override
 ENTRYPOINT ["/usr/local/bin/postgres"]
-CMD ["-D", "/var/lib/postgresql/data"]
+CMD ["-D", "/var/lib/postgresql/data", "-c", "listen_addresses=*", "-c", "log_connections=on"]
