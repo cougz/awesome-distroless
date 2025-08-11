@@ -29,7 +29,7 @@ RUN wget -q "https://go.dev/dl/go${TOOL_VERSION}.linux-amd64.tar.gz" -O /tmp/go.
     strip /tmp/go/bin/* || true
 
 # Stage 3: Final distroless image
-FROM scratch
+FROM distroless-base:0.2.0
 
 # Copy base files
 COPY --from=base-builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt

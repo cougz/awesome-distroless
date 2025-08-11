@@ -28,11 +28,14 @@ RUN wget -q "https://nodejs.org/dist/v${TOOL_VERSION}/node-v${TOOL_VERSION}-linu
     tar -xJf node.tar.xz && \
     mv node-v*-linux-x64 node && \
     strip /tmp/node/bin/node && \
-    strip /tmp/node/bin/npm || true && \
-    strip /tmp/node/bin/npx || true
+    # Don't strip npm/npx as they are scripts, not binaries
+    ls -la /tmp/node/bin/ && \
+    echo "Node.js installation contents:" && find /tmp/node -type f | head -20 && \
+    # Create clean tmp directory for distroless
+    mkdir -p /tmp/clean-tmp && chmod 1777 /tmp/clean-tmp
 
 # Stage 3: Final distroless image
-FROM scratch
+FROM distroless-base:0.2.0
 
 # Copy base files
 COPY --from=base-builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
@@ -55,6 +58,9 @@ COPY --from=base-builder /lib/x86_64-linux-gnu/libgcc_s.so.1 /lib/x86_64-linux-g
 
 # Copy tool binary/installation
 COPY --from=tool-builder /tmp/node /usr/local/
+
+# Create necessary directories that Node.js tools expect
+COPY --from=tool-builder /tmp/clean-tmp /tmp
 
 # Environment
 ENV PATH="/usr/local/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin"

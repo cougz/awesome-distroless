@@ -31,10 +31,12 @@ RUN wget -q "https://github.com/git/git/archive/v${TOOL_VERSION}.tar.gz" -O /tmp
     ./configure --prefix=/tmp/git-install --with-curl --with-expat --with-openssl --without-tcltk --without-python && \
     make -j$(nproc) && \
     make install && \
+    # Ensure remote helpers are available
+    ls -la /tmp/git-install/libexec/git-core/git-remote-* && \
     strip /tmp/git-install/bin/* || true
 
 # Stage 3: Final distroless image
-FROM scratch
+FROM distroless-base:0.2.0
 
 # Copy base files
 COPY --from=base-builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
@@ -51,12 +53,26 @@ COPY --from=base-builder /lib/x86_64-linux-gnu/libpthread.so.0 /lib/x86_64-linux
 # Runtime libraries
 COPY --from=base-builder /lib/x86_64-linux-gnu/libpcre2-8.so.0 /lib/x86_64-linux-gnu/libpcre2-8.so.0
 COPY --from=base-builder /lib/x86_64-linux-gnu/libz.so.1 /lib/x86_64-linux-gnu/libz.so.1
+# Curl libraries for HTTPS support
+COPY --from=tool-builder /usr/lib/x86_64-linux-gnu/libcurl-gnutls.so.4 /usr/lib/x86_64-linux-gnu/libcurl-gnutls.so.4
+COPY --from=tool-builder /usr/lib/x86_64-linux-gnu/libgnutls.so.30 /usr/lib/x86_64-linux-gnu/libgnutls.so.30
+COPY --from=tool-builder /usr/lib/x86_64-linux-gnu/libhogweed.so.6 /usr/lib/x86_64-linux-gnu/libhogweed.so.6
+COPY --from=tool-builder /usr/lib/x86_64-linux-gnu/libnettle.so.8 /usr/lib/x86_64-linux-gnu/libnettle.so.8
+COPY --from=tool-builder /usr/lib/x86_64-linux-gnu/libgmp.so.10 /usr/lib/x86_64-linux-gnu/libgmp.so.10
+# HTTP/2 and HTTP/3 libraries (copy what's available)
+COPY --from=tool-builder /usr/lib/x86_64-linux-gnu/libnghttp* /usr/lib/x86_64-linux-gnu/
+COPY --from=tool-builder /usr/lib/x86_64-linux-gnu/libngtcp* /usr/lib/x86_64-linux-gnu/
+# Additional dependencies
+COPY --from=tool-builder /usr/lib/x86_64-linux-gnu/libidn2.so.0 /usr/lib/x86_64-linux-gnu/libidn2.so.0
+COPY --from=tool-builder /usr/lib/x86_64-linux-gnu/libunistring.so.5 /usr/lib/x86_64-linux-gnu/libunistring.so.5
+COPY --from=tool-builder /usr/lib/x86_64-linux-gnu/libtasn1.so.6 /usr/lib/x86_64-linux-gnu/libtasn1.so.6
+COPY --from=tool-builder /usr/lib/x86_64-linux-gnu/libp11-kit.so.0 /usr/lib/x86_64-linux-gnu/libp11-kit.so.0
 
-# Copy tool binary/installation
+# Copy tool binary/installation (includes templates and remote helpers)
 COPY --from=tool-builder /tmp/git-install /usr/local/
 
-# Environment
-ENV PATH="/usr/local/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin"
+# Environment  
+ENV PATH="/usr/local/bin:/usr/local/libexec/git-core:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin"
 ENV HOME="/home/app"
 ENV USER="app"
 ENV TZ="UTC"

@@ -3,19 +3,18 @@
 # Uses multi-stage builds with debian builders and distroless final stage
 # Based on https://github.com/pocket-id/pocket-id
 
-# Stage 1: Clone source code
+# Stage 1: Clone source code using debian with git (reliable HTTPS support)
 FROM debian:trixie-slim AS source-stage
-RUN apt-get update && apt-get install -y git && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y git ca-certificates && rm -rf /var/lib/apt/lists/*
 WORKDIR /build
-# Clone the repo and checkout latest version
+# Clone the repo and checkout v1.7.0
 RUN git clone https://github.com/pocket-id/pocket-id.git . && \
-    git fetch --tags && \
-    git checkout $(git describe --tags $(git rev-list --tags --max-count=1))
+    git checkout v1.7.0
 
 # Stage 2: Build frontend using Node.js
 FROM debian:trixie-slim AS frontend-builder
 RUN apt-get update && apt-get install -y wget ca-certificates xz-utils && rm -rf /var/lib/apt/lists/*
-# Install Node.js 24.5.0 (matches our distroless-node version)
+# Install Node.js 24.5.0
 ARG NODE_VERSION=24.5.0
 RUN wget -q "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-x64.tar.xz" -O /tmp/node.tar.xz && \
     cd /tmp && tar -xJf node.tar.xz && \
@@ -29,9 +28,9 @@ WORKDIR /build/frontend
 RUN npm install -g pnpm && pnpm install && pnpm run build
 
 # Stage 3: Build backend using Go
-FROM debian:trixie-slim AS backend-builder
+FROM debian:trixie-slim AS backend-builder  
 RUN apt-get update && apt-get install -y wget ca-certificates && rm -rf /var/lib/apt/lists/*
-# Install Go 1.24.6 (matches our distroless-go version)
+# Install Go 1.24.6
 ARG GO_VERSION=1.24.6
 RUN wget -q "https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz" -O /tmp/go.tar.gz && \
     cd /tmp && tar -xzf go.tar.gz && \
