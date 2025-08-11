@@ -45,6 +45,9 @@ COPY --from=frontend-builder /build/backend/frontend/dist /build/backend/fronten
 WORKDIR /build/backend/cmd
 RUN go build -o ../../pocket-id
 
+# Create data directory structure with proper ownership
+RUN mkdir -p /tmp/app-data && chown -R 1000:1000 /tmp/app-data
+
 # Stage 4: Final application image using distroless base
 FROM distroless-base:0.2.0
 
@@ -62,6 +65,10 @@ COPY --from=frontend-builder /build/backend/frontend/dist /app/frontend/dist
 # Copy configuration template
 COPY --from=source-stage /build/.env.example /app/.env.example
 COPY --from=source-stage /build/.env.example /app/.env
+
+# Copy pre-created data directory with proper ownership
+# This ensures Docker volumes inherit correct permissions
+COPY --from=backend-builder --chown=1000:1000 /tmp/app-data /app/data
 
 # Set working directory
 WORKDIR /app
