@@ -5,12 +5,13 @@ Minimal, secure distroless images built from scratch with a modern 3-tier archit
 ## Features
 
 - **3-Tier Architecture**: Base → Tools → Applications
-- **Configuration-Driven**: Zero-touch addition via YAML configs
+- **Configuration-Driven**: Zero-touch addition via YAML configs  
+- **Version Validation**: Automated consistency checking
 - **Rootless**: Runs as non-root user (UID 1000) by default
 - **Distroless**: No shell, no package manager, no utilities
 - **Minimal**: Only CA certificates, timezone data, and user config
 - **Secure**: Smallest possible attack surface
-- **Auto-Discovery**: Tools and apps automatically detected
+- **Single Responsibility**: Each tool serves one purpose
 - **Self-Documenting**: YAML configurations serve as documentation
 
 ## Why Use Distroless?
@@ -36,7 +37,7 @@ Traditional container images include entire operating systems with hundreds of p
 ┌─────────────────────────────────────────┐
 │           Applications Layer            │
 │         (app-manager.sh)                │
-│   • pocket-id, custom apps              │
+│   • pocket-id:1.7.0, custom apps       │
 │   • Multi-stage builds using tools      │
 │   • Docker Compose orchestration        │
 └─────────────────────────────────────────┘
@@ -44,7 +45,8 @@ Traditional container images include entire operating systems with hundreds of p
 ┌─────────────────────────────────────────┐
 │            Tools Layer                  │
 │         (tool-manager.sh)               │
-│   • curl, jq, git, go, node, postgres   │
+│   • git:2.50.1, go:1.24.6, node:24.5.0 │
+│   • postgres:17.5, curl:8.11.1, jq:1.8.1│
 │   • Built on base image                 │
 │   • Single-purpose tool images          │
 └─────────────────────────────────────────┘
@@ -63,27 +65,32 @@ Traditional container images include entire operating systems with hundreds of p
 ```
 docker-distroless/
 ├── scripts/
-│   ├── base-manager.sh      # Base image management
-│   ├── tool-manager.sh      # Tool images management
-│   ├── app-manager.sh       # Application management
-│   └── build.sh            # Legacy compatibility
+│   ├── base-manager.sh        # Base image management
+│   ├── tool-manager.sh        # Tool images management  
+│   ├── app-manager.sh         # Application management
+│   ├── validate-versions.sh   # Version consistency validation
+│   └── build.sh              # Legacy compatibility
+├── base/
+│   ├── config/               # Base configuration
+│   │   └── base.yml
+│   └── dockerfiles/          # Base Dockerfiles
+│       └── base.Dockerfile
 ├── tools/
-│   ├── config/             # Tool build configurations
+│   ├── config/               # Tool configurations
 │   │   ├── curl.yml
 │   │   ├── git.yml
 │   │   ├── go.yml
 │   │   ├── jq.yml
 │   │   ├── node.yml
 │   │   └── postgres.yml
-│   └── dockerfiles/        # Generated tool Dockerfiles
+│   └── dockerfiles/          # Tool Dockerfiles
 ├── apps/
-│   ├── config/             # App build configurations
+│   ├── config/               # App configurations
 │   │   └── pocket-id.yml
-│   ├── dockerfiles/        # App Dockerfiles
+│   ├── dockerfiles/          # App Dockerfiles
 │   │   └── pocket-id.Dockerfile
-│   └── compose/            # Docker Compose files
+│   └── compose/              # Docker Compose files
 │       └── pocket-id.yml
-├── Dockerfile              # Base distroless image
 └── README.md
 ```
 
@@ -95,20 +102,30 @@ docker-distroless/
 # 1. Build base image
 ./scripts/base-manager.sh build
 
-# 2. Build required tools
-./scripts/tool-manager.sh build curl
-./scripts/tool-manager.sh build node
+# 2. Build required tool images (in dependency order)
+./scripts/tool-manager.sh build git
+./scripts/tool-manager.sh build node  
 ./scripts/tool-manager.sh build go
 ./scripts/tool-manager.sh build postgres
 
-# 3. Build application
+# 3. Build application image
 ./scripts/app-manager.sh build pocket-id
 
-# 4. Deploy with Docker Compose
+# 4. Verify all images were created
+docker images | grep distroless
+
+# 5. Deploy with Docker Compose
 docker compose -f apps/compose/pocket-id.yml up -d
 
 # Access the application
 curl http://localhost:3000
+```
+
+### Version Validation
+
+```bash
+# Validate version consistency across configs and Dockerfiles
+./scripts/validate-versions.sh
 ```
 
 ## Base Manager
@@ -116,10 +133,13 @@ curl http://localhost:3000
 Manages the foundational distroless image:
 
 ```bash
-# Build base image
-./scripts/base-manager.sh build [VERSION]
+# Build base image (version from base/config/base.yml)
+./scripts/base-manager.sh build
 
-# Test base image
+# Build specific version
+./scripts/base-manager.sh build 1.0.0
+
+# Test base image  
 ./scripts/base-manager.sh test
 
 # Show base image details
@@ -137,32 +157,31 @@ Manages individual tool images built on the base:
 # List all available tools
 ./scripts/tool-manager.sh list
 
-# Build a specific tool
+# Build a specific tool (uses version from YAML config)
 ./scripts/tool-manager.sh build curl
 
 # Test a tool
 ./scripts/tool-manager.sh test curl
 
 # Show tool configuration
-./scripts/tool-manager.sh show curl
+./scripts/tool-manager.sh config curl
 
 # Show tool Dockerfile
-./scripts/tool-manager.sh show-dockerfile curl
-
-# Clean tool images
-./scripts/tool-manager.sh clean [TOOL]
+./scripts/tool-manager.sh dockerfile curl
 ```
 
 ### Available Tools
 
-| Tool | Category | Description | Size |
-|------|----------|-------------|------|
-| `curl` | utility | HTTPS-enabled HTTP client | ~8MB |
-| `jq` | utility | JSON processor | ~5MB |
-| `git` | development | Version control system | ~45MB |
-| `go` | development | Go programming language | ~120MB |
-| `node` | development | Node.js runtime with npm | ~85MB |
-| `postgres` | database | PostgreSQL server with defaults | ~80MB |
+| Tool | Version | Category | Description | Size |
+|------|---------|----------|-------------|------|
+| `curl` | 8.11.1 | utility | HTTPS-enabled HTTP client | ~8MB |
+| `jq` | 1.8.1 | utility | JSON command-line processor | ~5MB |
+| `git` | 2.50.1 | development | Version control system | ~45MB |
+| `go` | 1.24.6 | development | Go programming language | ~120MB |
+| `node` | 24.5.0 | development | Node.js runtime with npm | ~85MB |
+| `postgres` | 17.5 | database | PostgreSQL with sensible defaults | ~80MB |
+
+All versions are managed via YAML configurations and automatically validated for consistency.
 
 ## Application Manager
 
@@ -172,7 +191,7 @@ Manages complete applications using multi-stage builds:
 # List available applications
 ./scripts/app-manager.sh list
 
-# Build application image
+# Build application image (uses version from YAML config)
 ./scripts/app-manager.sh build pocket-id
 
 # Test application
@@ -182,10 +201,7 @@ Manages complete applications using multi-stage builds:
 ./scripts/app-manager.sh compose pocket-id
 
 # Show application config
-./scripts/app-manager.sh show pocket-id
-
-# Clean application images
-./scripts/app-manager.sh clean [APP]
+./scripts/app-manager.sh config pocket-id
 ```
 
 ### Example Application: Pocket-ID
@@ -203,8 +219,8 @@ docker compose -f apps/compose/pocket-id.yml up -d
 ```
 
 **Stack Components:**
-- **distroless-pocket-id**: 60MB application image
-- **distroless-postgres**: 80MB database image
+- **distroless-pocket-id:1.7.0**: 60MB application image
+- **distroless-postgres:17.5**: 80MB database image  
 - **Total Stack**: ~140MB (vs ~1GB with traditional images)
 
 ## Adding New Tools
@@ -216,24 +232,27 @@ docker compose -f apps/compose/pocket-id.yml up -d
    description: "Tool description"
    category: "utility"
    build:
-     type: "source"  # or "download"
-     url: "https://example.com/newtool-{version}.tar.gz"
-     configure_flags:
-       - "--enable-feature"
-     build_dependencies:
-       - "build-essential"
-       - "libssl-dev"
-     runtime_libraries:
-       - "/lib/x86_64-linux-gnu/libssl.so.3"
-     binary_path: "/tmp/newtool/bin"
-     install_path: "/usr/local/bin"
      test_command: "newtool --version"
    ```
 
-2. **Build and test**:
+2. **Create Dockerfile** in `tools/dockerfiles/newtool.Dockerfile`:
+   ```dockerfile
+   FROM debian:trixie-slim AS tool-builder
+   
+   ARG TOOL_VERSION=1.0.0
+   RUN wget -q "https://example.com/newtool-v${TOOL_VERSION}.tar.gz" -O /tmp/newtool.tar.gz
+   # Build steps...
+   
+   FROM distroless-base:0.2.0
+   COPY --from=tool-builder /tmp/newtool-install /usr/local/
+   # Runtime configuration...
+   ```
+
+3. **Build and test**:
    ```bash
    ./scripts/tool-manager.sh build newtool
    ./scripts/tool-manager.sh test newtool
+   ./scripts/validate-versions.sh  # Ensure consistency
    ```
 
 ## Adding New Applications
@@ -241,33 +260,30 @@ docker compose -f apps/compose/pocket-id.yml up -d
 1. **Create app config** in `apps/config/myapp.yml`:
    ```yaml
    name: myapp
+   version: "2.1.0"
    description: "Application description"
    category: "application"
-   build:
-     tools_required:
-       - node:24.5.0
-       - postgres
-   defaults:
-     port: 8080
-     data_dir: "/app/data"
+   tools:
+     - node
+     - postgres
    ```
 
 2. **Create Dockerfile** in `apps/dockerfiles/myapp.Dockerfile`:
    ```dockerfile
    # Multi-stage build using tool images
-   FROM distroless-node AS builder
+   FROM distroless-node:24.5.0 AS builder
    # Build steps...
    
    FROM distroless-base:0.2.0
-   # Copy built application
-   # Runtime configuration
+   COPY --from=builder /app /app
+   CMD ["/app/myapp"]
    ```
 
 3. **Create compose file** in `apps/compose/myapp.yml`:
    ```yaml
    services:
      app:
-       image: distroless-myapp
+       image: distroless-myapp:2.1.0
        ports:
          - "8080:8080"
    ```
@@ -290,17 +306,40 @@ The PostgreSQL tool includes zero-configuration defaults:
 Pre-initialized and ready to use:
 ```bash
 # Run PostgreSQL
-docker run -p 5432:5432 distroless-postgres
+docker run -p 5432:5432 distroless-postgres:17.5
 
 # Connect from another container
 psql -h database -U postgres -d postgres
 ```
 
+## Multi-Tool Usage
+
+Use Docker Compose to combine tools when needed:
+
+```yaml
+# Instead of a single multi-tool container
+services:
+  frontend:
+    image: distroless-node:24.5.0
+    volumes:
+      - .:/workspace
+  backend:
+    image: distroless-go:1.24.6  
+    volumes:
+      - .:/workspace
+  git-ops:
+    image: distroless-git:2.50.1
+    volumes:
+      - .:/workspace
+```
+
+This approach maintains single responsibility while providing flexibility.
+
 ## Comparison
 
-| Image Type | Size | Distroless | Rootless | Config-Driven | Multi-stage |
-|------------|------|------------|----------|---------------|-------------|
-| **Base Image** | **1.53MB** | ✅ | ✅ | ✅ | N/A |
+| Image Type | Size | Distroless | Rootless | Versioned | Validated |
+|------------|------|------------|----------|-----------|-----------|
+| **Base Image** | **1.53MB** | ✅ | ✅ | ✅ | ✅ |
 | **Tool Images** | **5-120MB** | ✅ | ✅ | ✅ | ✅ |
 | **App Images** | **20-100MB** | ✅ | ✅ | ✅ | ✅ |
 | Alpine | ~5MB | ❌ | ❌ | ❌ | ❌ |
@@ -311,40 +350,42 @@ psql -h database -U postgres -d postgres
 ## Security Benefits
 
 1. **No Shell Access**: Attackers can't execute commands
-2. **No Package Manager**: Can't install malicious software
+2. **No Package Manager**: Can't install malicious software  
 3. **No System Utilities**: Can't explore or modify the system
 4. **Minimal Libraries**: Reduced attack surface
 5. **Non-root by Default**: Limited privileges (UID 1000)
 6. **Immutable Runtime**: No writable system directories
+7. **Version Consistency**: Automated validation prevents drift
 
 ## Dependencies
 
 - **Docker** - Container runtime
-- **yq** - YAML processor (auto-installed if missing)
-- **Standard build tools** - For compiling from source
+- **yq** - YAML processor for configuration parsing
 
 ## Important Notes
 
-- **No hardcoded dependencies between manager scripts** - Each operates independently
-- **Tools require base image** - Build base first
+- **Config-driven approach** - Versions managed in YAML, build logic in Dockerfiles
+- **Tools require base image** - Build base first (`./scripts/base-manager.sh build`)
 - **Apps require tool images** - Build required tools before apps
-- **Compose files** are in `apps/compose/` not root directory
-- **Configuration-driven** - Add new tools/apps via YAML only
+- **Single responsibility** - Each tool serves one purpose, use Compose for multi-tool needs
+- **Version validation** - Run `./scripts/validate-versions.sh` to ensure consistency
+- **No hardcoded scripts** - All installation logic properly contained in Dockerfiles
 
 ## Contributing
 
 1. Fork the repository
 2. Add configurations in appropriate directories:
-   - Tools: `tools/config/yourtool.yml`
-   - Apps: `apps/config/yourapp.yml`
+   - Tools: `tools/config/yourtool.yml` + `tools/dockerfiles/yourtool.Dockerfile`
+   - Apps: `apps/config/yourapp.yml` + `apps/dockerfiles/yourapp.Dockerfile`
 3. Test thoroughly:
    ```bash
    ./scripts/tool-manager.sh build yourtool
    ./scripts/tool-manager.sh test yourtool
+   ./scripts/validate-versions.sh
    ```
 4. Submit a pull request
 
-No code changes needed for new tools - just configuration!
+Follow the config-driven approach: metadata in YAML, build logic in Dockerfiles!
 
 ## License
 
