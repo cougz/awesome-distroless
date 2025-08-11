@@ -99,10 +99,6 @@ validate_tool() {
     fi
 }
 
-# Check if tools list contains comma (multi-tool build)
-is_multi_tool() {
-    [[ "$1" == *","* ]]
-}
 
 # Ensure distroless base image exists
 ensure_base_image() {
@@ -151,70 +147,13 @@ build_single_tool() {
     echo -e "${YELLOW}Image size: ${size}${NC}"
 }
 
-# Build multi-tool image
-build_multi_tool() {
-    local tools_list="$1"
-    
-    # Split tools into array and validate each
-    IFS=',' read -ra TOOLS <<< "${tools_list}"
-    for tool in "${TOOLS[@]}"; do
-        validate_tool "${tool}"
-    done
-    
-    echo -e "${GREEN}Building multi-tool image with: ${tools_list}...${NC}"
-    
-    # Check if we should auto-generate the Dockerfile
-    local dockerfile="${PROJECT_DIR}/Dockerfile.multi-tools"
-    if [[ "${tools_list}" == "git,go,node" ]] || [[ "${tools_list}" == "node,go,git" ]] || [[ "${tools_list}" == "go,git,node" ]]; then
-        echo -e "${BLUE}Auto-generating Dockerfile for git,go,node combination...${NC}"
-        if [ -f "${PROJECT_DIR}/scripts/dockerfile-generator.sh" ]; then
-            "${PROJECT_DIR}/scripts/dockerfile-generator.sh" multi-tools
-            dockerfile="${PROJECT_DIR}/Dockerfile.multi-tools.generated"
-        fi
-    fi
-    
-    if [ ! -f "${dockerfile}" ]; then
-        echo -e "${RED}Error: Multi-tool Dockerfile not found: ${dockerfile}${NC}" >&2
-        echo -e "${YELLOW}Available options:${NC}" >&2
-        echo -e "${YELLOW}  - Create Dockerfile.multi-tools manually${NC}" >&2
-        echo -e "${YELLOW}  - Use 'git,go,node' combination for auto-generation${NC}" >&2
-        exit 1
-    fi
-    
-    # Build image
-    local image_name="distroless-tools"
-    local image_tag="${image_name}"
-    
-    echo -e "${BLUE}Building Docker image: ${image_tag}${NC}"
-    echo -e "${BLUE}Using Dockerfile: ${dockerfile}${NC}"
-    
-    if docker build \
-        --platform linux/amd64 \
-        --tag "${image_tag}" \
-        --label "org.opencontainers.image.created=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-        --file "${dockerfile}" \
-        . ; then
-        echo -e "${GREEN}✓ Build successful: ${image_tag}${NC}"
-    else
-        echo -e "${RED}✗ Build failed for multi-tool image${NC}" >&2
-        exit 1
-    fi
-    
-    # Show image size
-    local size=$(docker image inspect "${image_tag}" --format='{{.Size}}' | numfmt --to=iec)
-    echo -e "${YELLOW}Image size: ${size}${NC}"
-}
 
 # Build tool image
 build_tool() {
     local tool_input="$1"
     
-    # Check if this is a multi-tool build
-    if is_multi_tool "${tool_input}"; then
-        build_multi_tool "${tool_input}"
-    else
-        build_single_tool "${tool_input}"
-    fi
+    # Only single tool builds are supported
+    build_single_tool "${tool_input}"
 }
 
 # Test tool
@@ -271,7 +210,6 @@ show_usage() {
     echo "Commands:"
     echo "  list                         List all available tools with status"
     echo "  build <tool>                 Build single tool image"
-    echo "  build <tool1,tool2>          Build multi-tool image"
     echo "  test <tool>                  Test tool image"
     echo "  config <tool>                Show tool YAML configuration"
     echo "  dockerfile <tool>            Show tool Dockerfile content"
@@ -280,7 +218,6 @@ show_usage() {
     echo "Examples:"
     echo "  $0 list                      # List available tools with status"
     echo "  $0 build curl                # Build curl image"
-    echo "  $0 build git,go,node         # Build multi-tool image with git, go, and node"
     echo "  $0 test curl                 # Test curl image"
     echo "  $0 config git                # Show git YAML configuration"
     echo "  $0 dockerfile postgres       # Show postgres Dockerfile"
