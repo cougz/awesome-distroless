@@ -49,9 +49,9 @@ RUN go build -o ../../pocket-id
 FROM distroless-base:0.2.0
 
 # Copy essential libraries for the Go binary (from our distroless-go image)
-COPY --from=distroless-go /lib64/ld-linux-x86-64.so.2 /lib64/ld-linux-x86-64.so.2
-COPY --from=distroless-go /lib/x86_64-linux-gnu/libc.so.6 /lib/x86_64-linux-gnu/libc.so.6
-COPY --from=distroless-go /lib/x86_64-linux-gnu/libpthread.so.0 /lib/x86_64-linux-gnu/libpthread.so.0
+COPY --from=distroless-go:1.24.6 /lib64/ld-linux-x86-64.so.2 /lib64/ld-linux-x86-64.so.2
+COPY --from=distroless-go:1.24.6 /lib/x86_64-linux-gnu/libc.so.6 /lib/x86_64-linux-gnu/libc.so.6
+COPY --from=distroless-go:1.24.6 /lib/x86_64-linux-gnu/libpthread.so.0 /lib/x86_64-linux-gnu/libpthread.so.0
 
 # Copy the built application binary
 COPY --from=backend-builder /build/pocket-id /usr/local/bin/pocket-id
