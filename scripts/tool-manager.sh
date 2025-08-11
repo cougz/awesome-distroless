@@ -163,11 +163,21 @@ build_multi_tool() {
     
     echo -e "${GREEN}Building multi-tool image with: ${tools_list}...${NC}"
     
-    # Check if multi-tool Dockerfile exists
+    # Check if we should auto-generate the Dockerfile
     local dockerfile="${PROJECT_DIR}/Dockerfile.multi-tools"
+    if [[ "${tools_list}" == "git,go,node" ]] || [[ "${tools_list}" == "node,go,git" ]] || [[ "${tools_list}" == "go,git,node" ]]; then
+        echo -e "${BLUE}Auto-generating Dockerfile for git,go,node combination...${NC}"
+        if [ -f "${PROJECT_DIR}/scripts/dockerfile-generator.sh" ]; then
+            "${PROJECT_DIR}/scripts/dockerfile-generator.sh" multi-tools
+            dockerfile="${PROJECT_DIR}/Dockerfile.multi-tools.generated"
+        fi
+    fi
+    
     if [ ! -f "${dockerfile}" ]; then
         echo -e "${RED}Error: Multi-tool Dockerfile not found: ${dockerfile}${NC}" >&2
-        echo -e "${YELLOW}Please create Dockerfile.multi-tools for multi-tool builds${NC}" >&2
+        echo -e "${YELLOW}Available options:${NC}" >&2
+        echo -e "${YELLOW}  - Create Dockerfile.multi-tools manually${NC}" >&2
+        echo -e "${YELLOW}  - Use 'git,go,node' combination for auto-generation${NC}" >&2
         exit 1
     fi
     
@@ -176,6 +186,7 @@ build_multi_tool() {
     local image_tag="${image_name}"
     
     echo -e "${BLUE}Building Docker image: ${image_tag}${NC}"
+    echo -e "${BLUE}Using Dockerfile: ${dockerfile}${NC}"
     
     if docker build \
         --platform linux/amd64 \
