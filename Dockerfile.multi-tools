@@ -47,13 +47,13 @@ RUN wget -q "https://go.dev/dl/go1.24.6.linux-amd64.tar.gz" -O /tmp/go.tar.gz &&
     strip /tmp/go/bin/* || true
 
 # Download and extract Node.js
-RUN wget -q "https://nodejs.org/dist/v22.13.1/node-v22.13.1-linux-x64.tar.xz" -O /tmp/node.tar.xz && \
+RUN wget -q "https://nodejs.org/dist/v24.5.0/node-v24.5.0-linux-x64.tar.xz" -O /tmp/node.tar.xz && \
     cd /tmp && \
     tar -xJf node.tar.xz && \
     mv node-v*-linux-x64 node && \
     strip /tmp/node/bin/node && \
-    strip /tmp/node/bin/npm || true && \
-    strip /tmp/node/bin/npx || true
+    # Don't strip npm/npx as they are scripts, not binaries
+    ls -la /tmp/node/bin/
 
 # Stage 3: Final distroless image
 FROM scratch
