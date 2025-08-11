@@ -3,37 +3,10 @@ version: "17.5"
 description: "PostgreSQL with sensible defaults (postgres/postgres/postgres)"
 category: "database"
 build:
-  type: "source"
-  url: "https://ftp.postgresql.org/pub/source/v{version}/postgresql-{version}.tar.bz2"
-  configure_flags:
-    - "--prefix=/tmp/postgres-install"
-    - "--with-openssl"
-    - "--with-zlib" 
-    - "--without-icu"
-    - "--without-readline"
-  build_dependencies:
-    - "build-essential"
-    - "bzip2"
-    - "wget"
-    - "ca-certificates"
-    - "libssl-dev"
-    - "zlib1g-dev"
-    - "binutils"
-    - "bison"
-    - "flex"
-  runtime_libraries:
-    - "/lib/x86_64-linux-gnu/libssl.so.3"
-    - "/lib/x86_64-linux-gnu/libcrypto.so.3"
-    - "/lib/x86_64-linux-gnu/libz.so.1"
-    - "/lib/x86_64-linux-gnu/libm.so.6"
-    - "/usr/lib/x86_64-linux-gnu/libzstd.so.1"
-  binary_path: "/tmp/postgres-install"
-  install_path: "/usr/local/"
   test_command: "postgres --version"
-  # Add default configuration
-  defaults:
-    user: "postgres"
-    password: "postgres"
-    database: "postgres"
-    data_dir: "/var/lib/postgresql/data"
-    port: 5432
+defaults:
+  user: "postgres"
+  password: "postgres"
+  database: "postgres"
+  data_dir: "/var/lib/postgresql/data"
+  port: 5432

@@ -13,9 +13,8 @@ NC='\033[0m' # No Color
 # Directories
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 PROJECT_DIR="$(dirname "${SCRIPT_DIR}")"
-
-# Default base image version
-BASE_VERSION="${BASE_VERSION:-0.2.0}"
+BASE_CONFIG_DIR="${PROJECT_DIR}/base/config"
+BASE_DOCKERFILES_DIR="${PROJECT_DIR}/base/dockerfiles"
 
 # Ensure we're in the project directory
 cd "${PROJECT_DIR}"
@@ -31,6 +30,16 @@ check_dependencies() {
     if [ ${#missing_deps[@]} -gt 0 ]; then
         echo -e "${RED}Error: Missing required dependencies: ${missing_deps[*]}${NC}" >&2
         exit 1
+    fi
+}
+
+# Get base version from config
+get_base_version() {
+    local config_file="${BASE_CONFIG_DIR}/base.yml"
+    if [ -f "${config_file}" ]; then
+        grep '^version:' "${config_file}" | cut -d'"' -f2
+    else
+        echo "0.2.0"  # Fallback version
     fi
 }
 
@@ -54,12 +63,13 @@ get_base_info() {
 
 # Build base image
 build_base() {
-    local version="${1:-${BASE_VERSION}}"
+    local version="${1:-$(get_base_version)}"
+    local dockerfile="${BASE_DOCKERFILES_DIR}/base.Dockerfile"
     
     echo -e "${GREEN}Building distroless-base:${version}...${NC}"
     
-    if ! test -f "Dockerfile"; then
-        echo -e "${RED}Error: Dockerfile not found in project root${NC}" >&2
+    if ! test -f "${dockerfile}"; then
+        echo -e "${RED}Error: Dockerfile not found: ${dockerfile}${NC}" >&2
         exit 1
     fi
     
@@ -70,7 +80,7 @@ build_base() {
         --tag "distroless-base:${version}" \
         --label "org.opencontainers.image.version=${version}" \
         --label "org.opencontainers.image.created=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-        --file Dockerfile \
+        --file "${dockerfile}" \
         . ; then
         echo -e "${GREEN}✓ Build successful: distroless-base:${version}${NC}"
         
@@ -85,7 +95,7 @@ build_base() {
 
 # Ensure base image exists (build if needed)
 ensure_base() {
-    local version="${1:-${BASE_VERSION}}"
+    local version="${1:-$(get_base_version)}"
     
     if ! base_image_exists "${version}"; then
         echo -e "${YELLOW}Base image distroless-base:${version} not found. Building it...${NC}"
@@ -114,7 +124,7 @@ list_base() {
 
 # Test base image
 test_base() {
-    local version="${1:-${BASE_VERSION}}"
+    local version="${1:-$(get_base_version)}"
     
     echo -e "${BLUE}Testing distroless-base:${version}...${NC}"
     
@@ -156,8 +166,9 @@ show_usage() {
     echo ""
     echo "Usage: $0 <command> [version]"
     echo ""
+    local default_version=$(get_base_version)
     echo "Commands:"
-    echo "  build [version]        Build distroless base image (default: ${BASE_VERSION})"
+    echo "  build [version]        Build distroless base image (default: ${default_version})"
     echo "  ensure [version]       Ensure base image exists (build if needed)"
     echo "  list                   List all base images"
     echo "  info [version]         Show base image information"
@@ -165,8 +176,9 @@ show_usage() {
     echo "  clean                  Remove all base images"
     echo "  help                   Show this help"
     echo ""
+    local default_version=$(get_base_version)
     echo "Examples:"
-    echo "  $0 build              # Build distroless-base:${BASE_VERSION}"
+    echo "  $0 build              # Build distroless-base:${default_version}"
     echo "  $0 build 1.0.0        # Build distroless-base:1.0.0"
     echo "  $0 list               # List all base images"
     echo "  $0 ensure             # Ensure default base exists"
@@ -187,19 +199,19 @@ main() {
     
     case "${command}" in
         build)
-            build_base "${1:-${BASE_VERSION}}"
+            build_base "${1:-$(get_base_version)}"
             ;;
         ensure)
-            ensure_base "${1:-${BASE_VERSION}}"
+            ensure_base "${1:-$(get_base_version)}"
             ;;
         list|ls)
             list_base
             ;;
         info|show)
-            get_base_info "${1:-${BASE_VERSION}}"
+            get_base_info "${1:-$(get_base_version)}"
             ;;
         test)
-            test_base "${1:-${BASE_VERSION}}"
+            test_base "${1:-$(get_base_version)}"
             ;;
         clean)
             clean_base

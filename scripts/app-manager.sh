@@ -119,8 +119,9 @@ build_app() {
     
     local app_file="${APPS_CONFIG_DIR}/${app_name}.yml"
     local dockerfile="${APPS_DOCKERFILES_DIR}/${app_name}.Dockerfile"
+    local app_version=$(yq eval '.version' "${app_file}")
     
-    echo -e "${GREEN}Building application: ${app_name}${NC}"
+    echo -e "${GREEN}Building application: ${app_name} v${app_version}${NC}"
     
     # Get required tool images and check they exist
     local required_tools=$(yq eval '.tools[]?' "${app_file}" 2>/dev/null | grep -v '^null$' | grep -v '^$' || true)
@@ -128,8 +129,17 @@ build_app() {
         echo -e "${BLUE}Required tool images: $(echo "${required_tools}" | tr '\n' ', ' | sed 's/,$//')${NC}"
         
         for tool in ${required_tools}; do
-            if ! docker image inspect "distroless-${tool}" >/dev/null 2>&1; then
-                echo -e "${YELLOW}Tool image distroless-${tool} not found${NC}" >&2
+            # Get tool version from its config
+            local tool_config="${PROJECT_DIR}/tools/config/${tool}.yml"
+            if [ -f "${tool_config}" ]; then
+                local tool_version=$(yq eval '.version' "${tool_config}")
+                local tool_image="distroless-${tool}:${tool_version}"
+            else
+                local tool_image="distroless-${tool}"
+            fi
+            
+            if ! docker image inspect "${tool_image}" >/dev/null 2>&1; then
+                echo -e "${YELLOW}Tool image ${tool_image} not found${NC}" >&2
                 echo -e "${RED}Please build tool first: ./scripts/tool-manager.sh build ${tool}${NC}" >&2
                 exit 1
             fi
@@ -145,18 +155,19 @@ build_app() {
     
     # Build the application image
     local image_name="distroless-${app_name}"
-    echo -e "${BLUE}Building Docker image: ${image_name}${NC}"
+    local image_tag="${image_name}:${app_version}"
+    echo -e "${BLUE}Building Docker image: ${image_tag}${NC}"
     
     if docker build \
         --platform linux/amd64 \
-        --tag "${image_name}" \
+        --tag "${image_tag}" \
         --label "org.opencontainers.image.created=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
         --file "${dockerfile}" \
         . ; then
-        echo -e "${GREEN}✓ Build successful: ${image_name}${NC}"
+        echo -e "${GREEN}✓ Build successful: ${image_tag}${NC}"
         
         # Show image size
-        local size=$(docker image inspect "${image_name}" --format='{{.Size}}' | numfmt --to=iec)
+        local size=$(docker image inspect "${image_tag}" --format='{{.Size}}' | numfmt --to=iec)
         echo -e "${YELLOW}Image size: ${size}${NC}"
     else
         echo -e "${RED}✗ Build failed for ${app_name}${NC}" >&2
@@ -170,17 +181,20 @@ test_app() {
     
     validate_app "${app_name}"
     
+    local app_file="${APPS_CONFIG_DIR}/${app_name}.yml"
+    local app_version=$(yq eval '.version' "${app_file}")
     local image_name="distroless-${app_name}"
+    local image_tag="${image_name}:${app_version}"
     
     echo -e "${BLUE}Testing ${app_name}...${NC}"
     
-    if ! docker image inspect "${image_name}" >/dev/null 2>&1; then
-        echo -e "${RED}Error: Image ${image_name} not found. Build it first.${NC}" >&2
+    if ! docker image inspect "${image_tag}" >/dev/null 2>&1; then
+        echo -e "${RED}Error: Image ${image_tag} not found. Build it first.${NC}" >&2
         exit 1
     fi
     
     # Test that the application image loads
-    if docker run --rm "${image_name}" node --version >/dev/null 2>&1; then
+    if docker run --rm "${image_tag}" node --version >/dev/null 2>&1; then
         echo -e "${GREEN}✓ Application image test passed${NC}"
     else
         echo -e "${YELLOW}⚠ Image exists but basic test failed${NC}"
@@ -217,8 +231,9 @@ EOF
         if [ -n "${explicit_image}" ] && [ "${explicit_image}" != "null" ]; then
             echo "    image: ${explicit_image}" >> "${compose_file}"
         else
-            # Use the built single-purpose app image
-            echo "    image: distroless-${app_name}" >> "${compose_file}"
+            # Use the built single-purpose app image with version
+            local app_version=$(yq eval '.version' "${app_file}")
+            echo "    image: distroless-${app_name}:${app_version}" >> "${compose_file}"
         fi
         
         # Add ports

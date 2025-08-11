@@ -3,15 +3,4 @@ version: "1.24.6"
 description: "Go programming language"
 category: "development"
 build:
-  type: "download"
-  url: "https://go.dev/dl/go{version}.linux-amd64.tar.gz"
-  build_dependencies:
-    - "wget"
-    - "ca-certificates"
-    - "tar"
-    - "binutils"
-  runtime_libraries: []
-  binary_path: "/tmp/go"
-  install_path: "/usr/local/go"
-  extract_archive: true
   test_command: "go version"
