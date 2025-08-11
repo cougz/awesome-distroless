@@ -194,10 +194,10 @@ test_app() {
     fi
     
     # Test that the application image loads
-    if docker run --rm "${image_tag}" node --version >/dev/null 2>&1; then
+    if docker run --rm "${image_tag}" /usr/local/bin/pocket-id --version >/dev/null 2>&1; then
         echo -e "${GREEN}✓ Application image test passed${NC}"
     else
-        echo -e "${YELLOW}⚠ Image exists but basic test failed${NC}"
+        echo -e "${YELLOW}⚠ Image exists but basic test failed (this may be expected if app requires runtime config)${NC}"
     fi
 }
 

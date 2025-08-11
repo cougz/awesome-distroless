@@ -3,7 +3,7 @@ version: "17.5"
 description: "PostgreSQL with sensible defaults (postgres/postgres/postgres)"
 category: "database"
 build:
-  test_command: "postgres --version"
+  test_command: "--version"
 defaults:
   user: "postgres"
   password: "postgres"
