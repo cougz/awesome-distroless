@@ -1,0 +1,26 @@
+name: pocket-id
+description: "Pocket ID authentication service"
+category: "application"
+source_repo: "https://github.com/pocket-id/pocket-id"
+build:
+  type: "source"
+  tools_required:
+    - node:24.5.0
+    - go:1.24.6
+    - git
+  frontend:
+    package_manager: "pnpm"
+    build_command: "pnpm run build"
+    output_dir: "backend/frontend/dist"
+  backend:
+    build_command: "go build"
+    binary_name: "pocket-id"
+  defaults:
+    port: 1411
+    data_dir: "/app/data"
+    database: "sqlite"  # Can be overridden to postgres
+labels:
+  distroless.app: "pocket-id"
+  org.opencontainers.image.description: "Distroless pocket-id application built from source"
+  org.opencontainers.image.title: "Distroless Pocket-ID Application"
+  org.opencontainers.image.source: "https://github.com/pocket-id/pocket-id"

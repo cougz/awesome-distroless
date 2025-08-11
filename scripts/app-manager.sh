@@ -14,7 +14,9 @@ NC='\033[0m' # No Color
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 PROJECT_DIR="$(dirname "${SCRIPT_DIR}")"
 APPS_DIR="${PROJECT_DIR}/apps"
+APPS_CONFIG_DIR="${APPS_DIR}/config"
 APPS_DOCKERFILES_DIR="${APPS_DIR}/dockerfiles"
+APPS_COMPOSE_DIR="${APPS_DIR}/compose"
 
 # Ensure we're in the project directory
 cd "${PROJECT_DIR}"
@@ -40,7 +42,7 @@ check_dependencies() {
 # Check if app exists
 app_exists() {
     local app_name="$1"
-    local app_file="${APPS_DIR}/${app_name}.yml"
+    local app_file="${APPS_CONFIG_DIR}/${app_name}.yml"
     [[ -f "${app_file}" ]]
 }
 
@@ -57,7 +59,7 @@ validate_app() {
     
     if ! app_exists "${app_name}"; then
         echo -e "${RED}Error: App '${app_name}' configuration not found${NC}" >&2
-        echo -e "${YELLOW}Expected file: ${APPS_DIR}/${app_name}.yml${NC}" >&2
+        echo -e "${YELLOW}Expected file: ${APPS_CONFIG_DIR}/${app_name}.yml${NC}" >&2
         list_apps >&2
         exit 1
     fi
@@ -83,18 +85,18 @@ get_app_status() {
 list_apps() {
     echo -e "${GREEN}Available applications:${NC}"
     
-    if [ ! -d "${APPS_DIR}" ]; then
-        echo -e "${YELLOW}  No apps directory found${NC}"
-        echo -e "${BLUE}  Create ${APPS_DIR}/ to define applications${NC}"
+    if [ ! -d "${APPS_CONFIG_DIR}" ]; then
+        echo -e "${YELLOW}  No apps config directory found${NC}"
+        echo -e "${BLUE}  Create ${APPS_CONFIG_DIR}/ to define applications${NC}"
         return
     fi
     
-    if [ -z "$(ls -A "${APPS_DIR}"/*.yml 2>/dev/null || true)" ]; then
+    if [ -z "$(ls -A "${APPS_CONFIG_DIR}"/*.yml 2>/dev/null || true)" ]; then
         echo -e "${YELLOW}  No apps configured${NC}"
         return
     fi
     
-    for app_file in "${APPS_DIR}"/*.yml; do
+    for app_file in "${APPS_CONFIG_DIR}"/*.yml; do
         if [ -f "${app_file}" ]; then
             local app_name=$(basename "${app_file}" .yml)
             local app_description=$(yq eval '.description // "No description"' "${app_file}")
@@ -115,7 +117,7 @@ build_app() {
     
     validate_app "${app_name}"
     
-    local app_file="${APPS_DIR}/${app_name}.yml"
+    local app_file="${APPS_CONFIG_DIR}/${app_name}.yml"
     local dockerfile="${APPS_DOCKERFILES_DIR}/${app_name}.Dockerfile"
     
     echo -e "${GREEN}Building application: ${app_name}${NC}"
@@ -191,8 +193,8 @@ compose() {
     
     validate_app "${app_name}"
     
-    local app_file="${APPS_DIR}/${app_name}.yml"
-    local compose_file="${PROJECT_DIR}/docker-compose.${app_name}.yml"
+    local app_file="${APPS_CONFIG_DIR}/${app_name}.yml"
+    local compose_file="${APPS_COMPOSE_DIR}/${app_name}.yml"
     
     echo -e "${BLUE}Generating compose file: ${compose_file}${NC}"
     
@@ -269,7 +271,7 @@ show_app() {
     
     validate_app "${app_name}"
     
-    local app_file="${APPS_DIR}/${app_name}.yml"
+    local app_file="${APPS_CONFIG_DIR}/${app_name}.yml"
     
     echo -e "${GREEN}Configuration for ${app_name}:${NC}"
     cat "${app_file}"
@@ -289,9 +291,9 @@ show_dockerfile() {
 
 # Create example app configuration
 create_example() {
-    mkdir -p "${APPS_DIR}" "${APPS_DOCKERFILES_DIR}"
+    mkdir -p "${APPS_CONFIG_DIR}" "${APPS_DOCKERFILES_DIR}" "${APPS_COMPOSE_DIR}"
     
-    local example_file="${APPS_DIR}/pocket-id.yml"
+    local example_file="${APPS_CONFIG_DIR}/pocket-id.yml"
     if [ ! -f "${example_file}" ]; then
         cat > "${example_file}" << 'EOF'
 name: pocket-id

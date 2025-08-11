@@ -1,0 +1,45 @@
+# Docker Compose for pocket-id distroless stack
+name: "pocket-id"
+
+services:
+  database:
+    image: distroless-postgres
+    environment:
+      POSTGRES_DB: pocketid
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: always
+
+  # Init container to fix data directory permissions
+  app-init:
+    image: debian:trixie-slim
+    volumes:
+      - pocket_data:/app/data
+    command: >
+      sh -c "
+        mkdir -p /app/data/uploads/application-images &&
+        mkdir -p /app/data/uploads/user-images &&
+        chown -R 65534:65534 /app/data &&
+        chmod -R 777 /app/data
+      "
+    restart: "no"
+
+  app:
+    depends_on:
+      - database
+      - app-init
+    image: distroless-pocket-id
+    ports:
+      - "3000:1411"
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@database:5432/pocketid
+      APP_URL: "http://localhost:3000"
+    volumes:
+      - pocket_data:/app/data
+    restart: always
+
+volumes:
+  postgres_data:
+  pocket_data:
