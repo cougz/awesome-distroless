@@ -33,7 +33,7 @@ check_dependencies() {
     
     if [ ${#missing_deps[@]} -gt 0 ]; then
         echo -e "${RED}Error: Missing required dependencies: ${missing_deps[*]}${NC}" >&2
-        echo -e "${YELLOW}Install yq: wget -qO- https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 | sudo tee /usr/local/bin/yq > /dev/null && sudo chmod +x /usr/local/bin/yq${NC}" >&2
+        echo -e "${YELLOW}Please install missing dependencies before continuing${NC}" >&2
         exit 1
     fi
 }
@@ -130,7 +130,7 @@ build_single_tool() {
     
     # Build image using existing Dockerfile
     local image_name="distroless-${tool_name}"
-    local image_tag="${image_name}"
+    local image_tag="${image_name}:${tool_version}"
     
     echo -e "${BLUE}Building Docker image: ${image_tag}${NC}"
     
@@ -213,7 +213,8 @@ test_tool() {
     validate_tool "${tool_name}"
     
     local config_file="${CONFIG_DIR}/${tool_name}.yml"
-    local image_tag="distroless-${tool_name}"
+    local tool_version=$(yq eval '.version' "${config_file}")
+    local image_tag="distroless-${tool_name}:${tool_version}"
     local test_command=$(yq eval '.build.test_command' "${config_file}")
     
     echo -e "${BLUE}Testing ${tool_name}...${NC}"
