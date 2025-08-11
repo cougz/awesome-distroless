@@ -44,17 +44,14 @@ RUN /tmp/postgres-install/bin/initdb -D /tmp/pgdata -U postgres --auth-local=tru
     sleep 5 && \
     /tmp/postgres-install/bin/psql -h localhost -p 5433 -U postgres -c "ALTER USER postgres PASSWORD 'postgres';" && \
     /tmp/postgres-install/bin/pg_ctl stop -D /tmp/pgdata -m fast && \
-    sleep 2 && \
-    chmod 700 /tmp/pgdata && \
-    mkdir -p /tmp/pgdata-final/var/lib/postgresql /tmp/pgdata-final/tmp && \
-    cp -a /tmp/pgdata /tmp/pgdata-final/var/lib/postgresql/data && \
-    chmod 1777 /tmp/pgdata-final/tmp
+    sleep 2
 
-# Switch back to root for remaining operations
+# Switch back to root to modify configuration files
 USER root
 
-# Create PostgreSQL configuration files
-RUN echo "listen_addresses = '*'" >> /tmp/pgdata/postgresql.conf && \
+# Update PostgreSQL configuration files BEFORE copying data
+RUN sed -i "s/#listen_addresses = 'localhost'/listen_addresses = '*'/" /tmp/pgdata/postgresql.conf && \
+    sed -i "s/listen_addresses = 'localhost'/listen_addresses = '*'/" /tmp/pgdata/postgresql.conf && \
     echo "port = 5432" >> /tmp/pgdata/postgresql.conf && \
     echo "max_connections = 100" >> /tmp/pgdata/postgresql.conf && \
     echo "shared_buffers = 128MB" >> /tmp/pgdata/postgresql.conf && \
@@ -65,6 +62,12 @@ RUN echo "# TYPE  DATABASE        USER            ADDRESS                 METHOD
     echo "host    all             all             127.0.0.1/32            md5" >> /tmp/pgdata/pg_hba.conf && \
     echo "host    all             all             ::1/128                 md5" >> /tmp/pgdata/pg_hba.conf && \
     echo "host    all             all             0.0.0.0/0               md5" >> /tmp/pgdata/pg_hba.conf
+
+# Now copy the configured data directory to final location
+RUN chmod 700 /tmp/pgdata && \
+    mkdir -p /tmp/pgdata-final/var/lib/postgresql /tmp/pgdata-final/tmp && \
+    cp -a /tmp/pgdata /tmp/pgdata-final/var/lib/postgresql/data && \
+    chmod 1777 /tmp/pgdata-final/tmp
 
 # Stage 3: Final distroless image
 FROM scratch
