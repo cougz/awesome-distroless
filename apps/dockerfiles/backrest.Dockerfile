@@ -54,10 +54,10 @@ RUN mkdir -p /tmp/app-data /tmp/config /tmp/cache && \
 # Stage 4: Final application image using distroless base
 FROM distroless-base:0.2.0
 
-# Copy essential libraries for the Go binary (from our distroless-go image)
-COPY --from=distroless-go:1.24.6 /lib64/ld-linux-x86-64.so.2 /lib64/ld-linux-x86-64.so.2
-COPY --from=distroless-go:1.24.6 /lib/x86_64-linux-gnu/libc.so.6 /lib/x86_64-linux-gnu/libc.so.6
-COPY --from=distroless-go:1.24.6 /lib/x86_64-linux-gnu/libpthread.so.0 /lib/x86_64-linux-gnu/libpthread.so.0
+# Copy essential libraries for the Go binary (from GHCR distroless-go image)
+COPY --from=ghcr.io/cougz/docker-distroless/go:1.24.6 /lib64/ld-linux-x86-64.so.2 /lib64/ld-linux-x86-64.so.2
+COPY --from=ghcr.io/cougz/docker-distroless/go:1.24.6 /lib/x86_64-linux-gnu/libc.so.6 /lib/x86_64-linux-gnu/libc.so.6
+COPY --from=ghcr.io/cougz/docker-distroless/go:1.24.6 /lib/x86_64-linux-gnu/libpthread.so.0 /lib/x86_64-linux-gnu/libpthread.so.0
 
 # Copy the built application binaries
 COPY --from=backend-builder /tmp/backrest /usr/local/bin/backrest
