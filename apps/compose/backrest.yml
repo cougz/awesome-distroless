@@ -1,0 +1,5 @@
+# Generated docker-compose for backrest
+# Generated on 2025-08-15T21:00:53Z
+version: '3.8'
+
+services:
