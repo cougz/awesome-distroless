@@ -25,13 +25,7 @@ services:
     restart: unless-stopped
     read_only: true
     tmpfs:
-      - "/tmp:size=${TMPFS_SIZE:-100M},noexec,nosuid,nodev"
-    deploy:
-      resources:
-        limits:
-          memory: "${MEMORY_LIMIT:-512M}"
-        reservations:
-          memory: "${MEMORY_RESERVATION:-128M}"
+      - "/tmp:size=${TMPFS_SIZE:-2G},noexec,nosuid,nodev"
 
 volumes:
   backrest_data:
