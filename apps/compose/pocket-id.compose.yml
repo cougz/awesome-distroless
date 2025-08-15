@@ -27,9 +27,9 @@ services:
       PUID: ${PUID:-1000}
       PGID: ${PGID:-1000}
     volumes:
-      - pocket_data:/app/data
+      - app_data:/app/data
     restart: always
 
 volumes:
   postgres_data:
-  pocket_data:
+  app_data:
