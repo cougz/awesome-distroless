@@ -1,0 +1,8 @@
+name: backrest
+version: "1.9.0"
+description: "Backrest web UI for restic backup - distroless application"
+category: "application"
+tools:
+  - node
+  - go
+  - git
