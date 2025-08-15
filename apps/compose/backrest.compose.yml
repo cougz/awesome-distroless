@@ -3,35 +3,35 @@ name: "backrest"
 
 services:
   backrest:
-    image: distroless-backrest:1.9.0
+    image: distroless-backrest:1.9.1
     ports:
-      - "9898:9898"
+      - "${BACKREST_WEB_PORT:-9898}:9898"
     environment:
-      BACKREST_PORT: "0.0.0.0:9898"
+      BACKREST_PORT: "${BACKREST_PORT:-0.0.0.0:9898}"
       BACKREST_DATA: "/var/lib/backrest/data"
       BACKREST_CONFIG: "/etc/backrest/config.json"
       XDG_CACHE_HOME: "/var/cache/backrest"
       TMPDIR: "/tmp"
-      TZ: ${TZ:-UTC}
+      TZ: "${TZ:-UTC}"
       BACKREST_RESTIC_COMMAND: "/usr/local/bin/restic"
-      PUID: ${PUID:-1000}
-      PGID: ${PGID:-1000}
+      PUID: "${PUID:-1000}"
+      PGID: "${PGID:-1000}"
     volumes:
       - backrest_data:/var/lib/backrest/data
       - backrest_config:/etc/backrest
       - backrest_cache:/var/cache/backrest
-      - ${BACKUP_SOURCE_PATH:-./data}:/userdata:ro
-      - ${LOCAL_REPO_PATH:-./repos}:/repos
+      - "${BACKUP_SOURCE_PATH:-./data}:/userdata:ro"
+      - "${LOCAL_REPO_PATH:-./repos}:/repos"
     restart: unless-stopped
     read_only: true
     tmpfs:
-      - /tmp:size=100M,noexec,nosuid,nodev
+      - "/tmp:size=${TMPFS_SIZE:-100M},noexec,nosuid,nodev"
     deploy:
       resources:
         limits:
-          memory: 512M
+          memory: "${MEMORY_LIMIT:-512M}"
         reservations:
-          memory: 128M
+          memory: "${MEMORY_RESERVATION:-128M}"
 
 volumes:
   backrest_data:
