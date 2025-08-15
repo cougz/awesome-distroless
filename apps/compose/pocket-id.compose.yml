@@ -2,33 +2,45 @@
 name: "pocket-id"
 
 services:
-  database:
+  pocket-id-database:
+    container_name: "${COMPOSE_PROJECT_NAME:-pocket-id}-database"
     image: distroless-postgres:17.5
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:?postgres}
-      POSTGRES_USER: ${POSTGRES_USER:?postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?postgres}
+      POSTGRES_DB: "${POSTGRES_DB:-postgres}"
+      POSTGRES_USER: "${POSTGRES_USER:-postgres}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-postgres}"
       POSTGRES_HOST_AUTH_METHOD: trust
+      TZ: "${TZ:-UTC}"
+      PUID: "${PUID:-1000}"
+      PGID: "${PGID:-1000}"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    restart: always
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - "/tmp:size=${TMPFS_SIZE:-1G},noexec,nosuid,nodev"
 
-  app:
+  pocket-id-app:
+    container_name: "${COMPOSE_PROJECT_NAME:-pocket-id}-app"
     depends_on:
-      - database
+      - pocket-id-database
     image: distroless-pocket-id:1.7.0
     ports:
-      - "3000:1411"
+      - "${WEB_PORT:-3000}:1411"
     environment:
       DB_PROVIDER: "postgres"
-      DB_CONNECTION_STRING: "postgres://postgres:postgres@database:5432/postgres"
-      APP_URL: ${APP_URL:?http://localhost:3000}
+      DB_CONNECTION_STRING: "postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@pocket-id-database:5432/${POSTGRES_DB:-postgres}"
+      APP_URL: "${APP_URL:-http://localhost:3000}"
       TRUST_PROXY: "true"
-      PUID: ${PUID:-1000}
-      PGID: ${PGID:-1000}
+      TZ: "${TZ:-UTC}"
+      PUID: "${PUID:-1000}"
+      PGID: "${PGID:-1000}"
     volumes:
       - app_data:/app/data
-    restart: always
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - "/tmp:size=${TMPFS_SIZE:-1G},noexec,nosuid,nodev"
 
 volumes:
   postgres_data:
