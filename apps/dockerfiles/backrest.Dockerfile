@@ -6,7 +6,7 @@
 FROM debian:trixie-slim AS source-stage
 RUN apt-get update && apt-get install -y git ca-certificates && rm -rf /var/lib/apt/lists/*
 WORKDIR /build
-ARG BACKREST_VERSION=v1.9.0
+ARG BACKREST_VERSION=v1.9.1
 RUN git clone https://github.com/garethgeorge/backrest.git . && \
     git checkout ${BACKREST_VERSION}
 
