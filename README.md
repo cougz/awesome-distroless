@@ -1,10 +1,10 @@
 # Docker Distroless Images
 
-Minimal, secure distroless images built from scratch with a modern 3-tier architecture. Base image **1.53MB**, with configurable tools and applications.
+Minimal, secure distroless images built from scratch with a modern 3-tier management system. Base image **1.53MB**, with configurable tools and applications.
 
 ## Features
 
-- **3-Tier Architecture**: Base → Tools → Applications
+- **3-Tier Management**: Specialized managers for base, tools, and applications
 - **Configuration-Driven**: Zero-touch addition via YAML configs  
 - **Version Validation**: Automated consistency checking
 - **Rootless**: Runs as non-root user (UID 1000) by default
@@ -31,34 +31,52 @@ Traditional container images include entire operating systems with hundreds of p
 
 ## Architecture
 
-### 3-Tier Management System
+### 3-Tier Management System with Unified Distroless Runtime
+
+The framework provides three specialized management layers that all converge on a shared distroless foundation:
 
 ```
 ┌─────────────────────────────────────────┐
-│           Applications Layer            │
+│         Application Management          │
 │         (app-manager.sh)                │
-│   • pocket-id:1.7.0, custom apps       │
-│   • Multi-stage builds using tools      │
+│   • Complex multi-stage builds         │
+│   • Full application stacks            │
 │   • Docker Compose orchestration        │
+│   • debian:trixie → distroless-base     │
 └─────────────────────────────────────────┘
-                    ↓
+
 ┌─────────────────────────────────────────┐
-│            Tools Layer                  │
+│           Tool Management               │
 │         (tool-manager.sh)               │
-│   • git:2.50.1, go:1.24.6, node:24.5.0 │
-│   • postgres:17.5, curl:8.11.1, jq:1.8.1│
-│   • Built on base image                 │
-│   • Single-purpose tool images          │
+│   • Single-purpose utilities           │
+│   • Reusable development tools          │
+│   • debian:trixie → distroless-base     │
 └─────────────────────────────────────────┘
-                    ↓
+
 ┌─────────────────────────────────────────┐
-│             Base Layer                  │
+│          Base Management                │
 │         (base-manager.sh)               │
-│   • Minimal distroless foundation       │
+│   • Unified distroless foundation       │
 │   • CA certs, timezone, user setup      │
 │   • 1.53MB from scratch                 │
+│   • Shared by ALL images               │
 └─────────────────────────────────────────┘
 ```
+
+**Key Architectural Principles:**
+
+- **Unified Runtime Foundation**: All images (tools and applications) use the same `distroless-base:0.2.0` for maximum security and consistency
+- **Flexible Build Patterns**: Tools and applications can use different build strategies while sharing the secure runtime base
+- **Management Separation**: Three specialized managers handle different complexity levels and use cases
+- **Configuration-Driven**: YAML configs provide version consistency and serve as documentation
+- **Consistent Security Model**: Every image runs rootless (UID 1000) with minimal attack surface
+
+**Build Flow:**
+1. **Tools**: `debian:trixie-slim` (builder) → `distroless-base:0.2.0` (runtime)
+2. **Applications**: `debian:trixie-slim` (multi-stage builders) → `distroless-base:0.2.0` (runtime)
+3. **Base**: `debian:trixie-slim` (preparation) → `scratch` (minimal foundation)
+
+This architecture ensures that whether you're building a simple utility (curl, jq) or a complex application (pocket-id, backrest), you get the same security benefits and minimal attack surface in the final image.
 
 ### Project Structure
 
@@ -270,9 +288,9 @@ docker compose -f apps/compose/pocket-id.yml up -d
 
 2. **Create Dockerfile** in `apps/dockerfiles/myapp.Dockerfile`:
    ```dockerfile
-   # Multi-stage build using tool images
-   FROM distroless-node:24.5.0 AS builder
-   # Build steps...
+   # Multi-stage build using Debian builders
+   FROM debian:trixie-slim AS builder
+   # Install Node.js, build steps...
    
    FROM distroless-base:0.2.0
    COPY --from=builder /app /app
@@ -366,7 +384,7 @@ This approach maintains single responsibility while providing flexibility.
 
 - **Config-driven approach** - Versions managed in YAML, build logic in Dockerfiles
 - **Tools require base image** - Build base first (`./scripts/base-manager.sh build`)
-- **Apps require tool images** - Build required tools before apps
+- **Apps use independent builds** - Applications build from Debian stages and use distroless-base runtime
 - **Single responsibility** - Each tool serves one purpose, use Compose for multi-tool needs
 - **Version validation** - Run `./scripts/validate-versions.sh` to ensure consistency
 - **No hardcoded scripts** - All installation logic properly contained in Dockerfiles
