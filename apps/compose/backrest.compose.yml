@@ -21,7 +21,7 @@ services:
       - backrest_config:/etc/backrest
       - backrest_cache:/var/cache/backrest
       - "${BACKUP_SOURCE_PATH:-./data}:/userdata:ro"
-      - "${LOCAL_REPO_PATH:-./repos}:/repos"
+      - backrest_repos:/repos
     restart: unless-stopped
     read_only: true
     tmpfs:
@@ -31,3 +31,4 @@ volumes:
   backrest_data:
   backrest_config:
   backrest_cache:
+  backrest_repos:
