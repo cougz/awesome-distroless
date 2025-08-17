@@ -3,15 +3,16 @@ services:
     build:
       context: ..
       dockerfile: nginx/Dockerfile
-    image: distroless-nginx:1.27.3
+    image: nginx-quic
     container_name: distroless-nginx
     environment:
       TZ: ${TZ:-UTC}
     ports:
-      - "${NGINX_PORT:-8080}:8080"
+      - "${NGINX_HTTP_PORT:-8080}:8080"
+      - "${NGINX_HTTPS_PORT:-8443}:8443"
+      - "${NGINX_QUIC_PORT:-8443}:8443/udp"
     volumes:
-      - ./html:/usr/share/nginx/html:ro
-      - ./config:/etc/nginx/conf.d:ro
+      - nginx-html:/usr/share/nginx/html
     healthcheck:
       test: ["CMD", "/usr/local/bin/nginx", "-t"]
       interval: 30s
@@ -26,3 +27,6 @@ services:
       - no-new-privileges:true
     cap_drop:
       - ALL
+
+volumes:
+  nginx-html:
