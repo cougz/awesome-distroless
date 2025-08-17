@@ -59,7 +59,7 @@ USER ${APP_UID}:${APP_GID}
 LABEL org.opencontainers.image.title="Distroless Base"
 LABEL org.opencontainers.image.description="Minimal distroless base image with CA certificates and timezone data"
 LABEL org.opencontainers.image.authors="cougz"
-LABEL org.opencontainers.image.source="https://github.com/cougz/docker-distroless"
+LABEL org.opencontainers.image.source="https://github.com/cougz/awesome-distroless"
 LABEL org.opencontainers.image.base.name="scratch"
 LABEL org.opencontainers.image.version="${VERSION}"
 

@@ -72,7 +72,7 @@ EXPOSE 6379
 LABEL org.opencontainers.image.title="Distroless Redis"
 LABEL org.opencontainers.image.description="Minimal distroless Redis image"
 LABEL org.opencontainers.image.version="${VERSION}"
-LABEL org.opencontainers.image.source="https://github.com/cougz/docker-distroless"
+LABEL org.opencontainers.image.source="https://github.com/cougz/awesome-distroless"
 
 # Health check using redis-cli
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \

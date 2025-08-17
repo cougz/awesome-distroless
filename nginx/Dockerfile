@@ -263,7 +263,7 @@ EXPOSE 8080/tcp 8443/tcp 8443/udp
 LABEL org.opencontainers.image.title="Distroless Nginx"
 LABEL org.opencontainers.image.description="Minimal distroless Nginx image - rootless"
 LABEL org.opencontainers.image.version="${VERSION}"
-LABEL org.opencontainers.image.source="https://github.com/cougz/docker-distroless"
+LABEL org.opencontainers.image.source="https://github.com/cougz/awesome-distroless"
 
 # Health check - simple curl since we don't have nginx -t access
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
