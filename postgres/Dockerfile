@@ -3,6 +3,9 @@ ARG APP_UID=1000
 ARG APP_GID=1000
 ARG TZ=UTC
 ARG VERSION=17.5
+ARG POSTGRES_USER=postgres
+ARG POSTGRES_PASSWORD=postgres
+ARG POSTGRES_DB=postgres
 
 # Build stage
 FROM debian:trixie-slim AS builder
@@ -11,6 +14,9 @@ ARG VERSION
 ARG APP_UID
 ARG APP_GID
 ARG TZ
+ARG POSTGRES_USER
+ARG POSTGRES_PASSWORD
+ARG POSTGRES_DB
 
 # Install build dependencies
 RUN apt-get update && \
@@ -49,7 +55,7 @@ RUN useradd -u ${APP_UID} -g ${APP_GID} -m app || groupadd -g ${APP_GID} app && 
 
 # Switch to app user and initialize database
 USER ${APP_UID}:${APP_GID}
-RUN /usr/local/bin/initdb -D /tmp/pgdata -U postgres --auth-local=trust --auth-host=trust && \
+RUN /usr/local/bin/initdb -D /tmp/pgdata -U ${POSTGRES_USER} --auth-local=trust --auth-host=trust && \
     echo "host    all             all             0.0.0.0/0               trust" >> /tmp/pgdata/pg_hba.conf && \
     echo "host    all             all             ::/0                    trust" >> /tmp/pgdata/pg_hba.conf
 
@@ -85,12 +91,16 @@ RUN mkdir -p /tmp/pgdata-final/tmp && \
     chown ${APP_UID}:${APP_GID} /tmp/pgdata-final/tmp && \
     chmod 1777 /tmp/pgdata-final/tmp
 
+
 # Final stage
 FROM distroless-base:1.0.0
 
 ARG VERSION
 ARG APP_UID
 ARG APP_GID
+ARG POSTGRES_USER
+ARG POSTGRES_PASSWORD
+ARG POSTGRES_DB
 
 # Copy PostgreSQL installation
 COPY --from=builder /usr/local /usr/local
@@ -112,9 +122,9 @@ COPY --from=builder /tmp/pgdata-final/ /
 ENV PATH="/usr/local/bin:/usr/local/sbin:${PATH}"
 ENV LD_LIBRARY_PATH="/usr/local/lib"
 ENV PGDATA="/var/lib/postgresql/data"
-ENV POSTGRES_USER="postgres"
-ENV POSTGRES_PASSWORD="postgres"
-ENV POSTGRES_DB="postgres"
+ENV POSTGRES_USER="${POSTGRES_USER}"
+ENV POSTGRES_PASSWORD="${POSTGRES_PASSWORD}"
+ENV POSTGRES_DB="${POSTGRES_DB}"
 
 # Switch to app user
 USER ${APP_UID}:${APP_GID}
@@ -128,7 +138,7 @@ LABEL org.opencontainers.image.description="Minimal distroless PostgreSQL image"
 LABEL org.opencontainers.image.version="${VERSION}"
 LABEL org.opencontainers.image.source="https://github.com/cougz/docker-distroless"
 
-# Health check
+# Health check (using default postgres user since health check needs hardcoded values)
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
   CMD ["/usr/local/bin/pg_isready", "-U", "postgres", "-d", "postgres"]
 

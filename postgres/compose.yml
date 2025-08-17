@@ -6,9 +6,6 @@ services:
     image: distroless-postgres:17.5
     container_name: distroless-postgres
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-      POSTGRES_DB: ${POSTGRES_DB:-postgres}
       TZ: ${TZ:-UTC}
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
