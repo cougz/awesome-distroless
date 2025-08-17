@@ -1,0 +1,36 @@
+# Docker Compose template for nginx distroless
+name: "nginx"
+
+services:
+  nginx:
+    container_name: "${COMPOSE_PROJECT_NAME:-nginx}"
+    image: distroless-nginx:1.29.1
+    ports:
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+    environment:
+      TZ: "${TZ:-UTC}"
+      PGID: "1000"
+    volumes:
+      # Bind mount for nginx configuration - highly configurable
+      - "${NGINX_CONFIG_PATH:-./nginx}:/etc/nginx:ro"
+      # Volume for logs
+      - logs:/var/log/nginx
+      # Volume for cache
+      - cache:/var/cache/nginx
+      # Optional: Bind mount for web content
+      - "${WEB_ROOT:-./html}:/usr/share/nginx/html:ro"
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - "/var/run:size=${TMPFS_SIZE:-100M},noexec,nosuid,nodev"
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+
+volumes:
+  logs:
+  cache:

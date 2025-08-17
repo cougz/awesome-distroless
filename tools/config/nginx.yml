@@ -1,0 +1,13 @@
+name: nginx
+version: "1.29.1"
+description: "High-performance HTTP server and reverse proxy"
+category: "web"
+build:
+  test_command: "-v"
+defaults:
+  http_port: 80
+  https_port: 443
+  config_dir: "/etc/nginx"
+  log_dir: "/var/log/nginx"
+  cache_dir: "/var/cache/nginx"
+  web_root: "/usr/share/nginx/html"
