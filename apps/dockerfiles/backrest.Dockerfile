@@ -14,6 +14,7 @@ RUN git clone https://github.com/garethgeorge/backrest.git . && \
 FROM debian:trixie-slim AS frontend-builder
 RUN apt-get update && apt-get install -y wget ca-certificates xz-utils && rm -rf /var/lib/apt/lists/*
 ARG NODE_VERSION=24.5.0
+ARG BACKREST_VERSION=v1.9.1
 RUN wget -q "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-x64.tar.xz" -O /tmp/node.tar.xz && \
     cd /tmp && tar -xJf node.tar.xz && \
     mv node-v*-linux-x64 /usr/local/node
@@ -22,6 +23,8 @@ ENV PATH="/usr/local/node/bin:${PATH}"
 WORKDIR /build
 COPY --from=source-stage /build /build
 WORKDIR /build/webui
+# Set the version for the frontend build with distroless prefix
+ENV BACKREST_BUILD_VERSION="distroless-backrest-${BACKREST_VERSION}"
 RUN npm install -g pnpm && pnpm install && pnpm run build
 
 # Stage 3: Build backend using Go
