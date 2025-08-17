@@ -80,6 +80,11 @@ RUN chmod 700 /tmp/pgdata && \
     cp -a /tmp/pgdata /tmp/pgdata-final/var/lib/postgresql/data && \
     chown -R ${APP_UID}:${APP_GID} /tmp/pgdata-final
 
+# Create /tmp directory structure for the final image
+RUN mkdir -p /tmp/pgdata-final/tmp && \
+    chown ${APP_UID}:${APP_GID} /tmp/pgdata-final/tmp && \
+    chmod 1777 /tmp/pgdata-final/tmp
+
 # Final stage
 FROM distroless-base:1.0.0
 

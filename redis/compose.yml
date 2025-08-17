@@ -19,6 +19,7 @@ services:
       retries: 3
       start_period: 10s
     restart: unless-stopped
+    read_only: true
     tmpfs:
       - /tmp:noexec,nosuid,size=10m
     security_opt:
