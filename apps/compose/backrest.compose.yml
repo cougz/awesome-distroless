@@ -18,18 +18,18 @@ services:
       PUID: "${PUID:-1000}"
       PGID: "${PGID:-1000}"
     volumes:
-      - backrest_data:/var/lib/backrest/data
-      - backrest_config:/etc/backrest
-      - backrest_cache:/var/cache/backrest
+      - data:/var/lib/backrest/data
+      - config:/etc/backrest
+      - cache:/var/cache/backrest
       - "${BACKUP_SOURCE_PATH:-./data}:/userdata:ro"
-      - backrest_repos:/repos
+      - repos:/repos
     restart: unless-stopped
     read_only: true
     tmpfs:
       - "/tmp:size=${TMPFS_SIZE:-2G},noexec,nosuid,nodev"
 
 volumes:
-  backrest_data:
-  backrest_config:
-  backrest_cache:
-  backrest_repos:
+  data:
+  config:
+  cache:
+  repos:

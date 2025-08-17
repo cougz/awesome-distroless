@@ -39,6 +39,7 @@ COPY --from=frontend-builder /build/webui/dist ./webui/dist
 
 # Build the backend (skip go generate since frontend is already built)
 # Set version information in the binary
+ARG BACKREST_VERSION
 RUN cd cmd/backrest && \
     CGO_ENABLED=0 GOOS=linux go build \
     -ldflags="-s -w -X main.version=${BACKREST_VERSION} -X main.commit=${BACKREST_VERSION}" \
