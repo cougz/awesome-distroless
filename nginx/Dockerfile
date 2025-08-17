@@ -268,9 +268,9 @@ LABEL org.opencontainers.image.description="Minimal distroless Nginx image - roo
 LABEL org.opencontainers.image.version="${VERSION}"
 LABEL org.opencontainers.image.source="https://github.com/cougz/awesome-distroless"
 
-# Health check - simple curl since we don't have nginx -t access
+# Health check - nginx can check its own config
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD ["test", "-f", "/tmp/nginx.pid"]
+  CMD ["-t", "-q"]
 
 ENTRYPOINT ["/usr/local/bin/nginx"]
 CMD ["-g", "daemon off;"]
