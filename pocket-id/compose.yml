@@ -46,7 +46,7 @@ services:
         APP_GID: "${APP_GID:-1000}"
         TZ: "${TZ:-UTC}"
         VERSION: "${POCKET_ID_VERSION:-1.7.0}"
-        BASE_IMAGE: "ghcr.io/cougz/awesome-distroless/base:1.0.0"
+        BASE_IMAGE: "ghcr.io/cougz/awesome-distroless:base-1.0.0"
     image: pocket-id:1.7.0
     ports:
       - "${WEB_PORT:-3000}:1411"

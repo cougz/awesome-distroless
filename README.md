@@ -31,13 +31,13 @@ Images are automatically built and published to GitHub Container Registry (GHCR)
 **Available images:**
 ```bash
 # Core services
-docker pull ghcr.io/cougz/awesome-distroless/postgres:17.5
-docker pull ghcr.io/cougz/awesome-distroless/nginx:1.29.1
-docker pull ghcr.io/cougz/awesome-distroless/redis:7.4.2
+docker pull ghcr.io/cougz/awesome-distroless:postgres-17.5
+docker pull ghcr.io/cougz/awesome-distroless:nginx-1.29.1
+docker pull ghcr.io/cougz/awesome-distroless:redis-7.4.2
 
 # Applications
-docker pull ghcr.io/cougz/awesome-distroless/pocket-id:1.7.0
-docker pull ghcr.io/cougz/awesome-distroless/backrest:1.9.1
+docker pull ghcr.io/cougz/awesome-distroless:pocket-id-1.7.0
+docker pull ghcr.io/cougz/awesome-distroless:backrest-1.9.1
 ```
 
 **Quick start:**

@@ -30,7 +30,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+  REPO_NAME: ${{ github.repository }}
 
 jobs:
   # Job 1: Build base image (dependency for all others)
@@ -60,14 +60,10 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/base
+          images: ${{ env.REGISTRY }}/${{ env.REPO_NAME }}:base
           tags: |
-            type=ref,event=branch
-            type=ref,event=pr
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=raw,value=1.0.0
-            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=base-1.0.0
+            type=raw,value=base,enable={{is_default_branch}}
 
       - name: Build and push base image
         id: build
@@ -107,14 +103,10 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/postgres
+          images: ${{ env.REGISTRY }}/${{ env.REPO_NAME }}:postgres
           tags: |
-            type=ref,event=branch
-            type=ref,event=pr
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=raw,value=17.5
-            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=postgres-17.5
+            type=raw,value=postgres,enable={{is_default_branch}}
 
       - name: Build and push PostgreSQL image
         uses: docker/build-push-action@v5
@@ -131,11 +123,11 @@ jobs:
             APP_UID=1000
             APP_GID=1000
             TZ=UTC
-            BASE_IMAGE=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/base:1.0.0
+            BASE_IMAGE=${{ env.REGISTRY }}/${{ env.REPO_NAME }}:base-1.0.0
             POSTGRES_USER=postgres
             POSTGRES_PASSWORD=postgres
             POSTGRES_DB=postgres
-            BASE_IMAGE=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/base:1.0.0
+            BASE_IMAGE=${{ env.REGISTRY }}/${{ env.REPO_NAME }}:base-1.0.0
 
   # Job 3: Build Nginx image
   build-nginx:
@@ -162,14 +154,10 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/nginx
+          images: ${{ env.REGISTRY }}/${{ env.REPO_NAME }}:nginx
           tags: |
-            type=ref,event=branch
-            type=ref,event=pr
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=raw,value=1.29.1
-            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=nginx-1.29.1
+            type=raw,value=nginx,enable={{is_default_branch}}
 
       - name: Build and push Nginx image
         uses: docker/build-push-action@v5
@@ -186,7 +174,7 @@ jobs:
             APP_UID=1000
             APP_GID=1000
             TZ=UTC
-            BASE_IMAGE=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/base:1.0.0
+            BASE_IMAGE=${{ env.REGISTRY }}/${{ env.REPO_NAME }}:base-1.0.0
 
   # Job 4: Build Redis image
   build-redis:
@@ -213,14 +201,10 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/redis
+          images: ${{ env.REGISTRY }}/${{ env.REPO_NAME }}:redis
           tags: |
-            type=ref,event=branch
-            type=ref,event=pr
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=raw,value=7.4.2
-            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=redis-7.4.2
+            type=raw,value=redis,enable={{is_default_branch}}
 
       - name: Build and push Redis image
         uses: docker/build-push-action@v5
@@ -237,7 +221,7 @@ jobs:
             APP_UID=1000
             APP_GID=1000
             TZ=UTC
-            BASE_IMAGE=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/base:1.0.0
+            BASE_IMAGE=${{ env.REGISTRY }}/${{ env.REPO_NAME }}:base-1.0.0
 
   # Job 5: Build Pocket-ID image
   build-pocket-id:
@@ -264,14 +248,10 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/pocket-id
+          images: ${{ env.REGISTRY }}/${{ env.REPO_NAME }}:pocket-id
           tags: |
-            type=ref,event=branch
-            type=ref,event=pr
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=raw,value=1.7.0
-            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=pocket-id-1.7.0
+            type=raw,value=pocket-id,enable={{is_default_branch}}
 
       - name: Build and push Pocket-ID image
         uses: docker/build-push-action@v5
@@ -289,7 +269,7 @@ jobs:
             APP_GID=1000
             TZ=UTC
             VERSION=1.7.0
-            BASE_IMAGE=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/base:1.0.0
+            BASE_IMAGE=${{ env.REGISTRY }}/${{ env.REPO_NAME }}:base-1.0.0
 
   # Job 6: Build Backrest image
   build-backrest:
@@ -316,14 +296,10 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/backrest
+          images: ${{ env.REGISTRY }}/${{ env.REPO_NAME }}:backrest
           tags: |
-            type=ref,event=branch
-            type=ref,event=pr
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=raw,value=1.9.1
-            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=backrest-1.9.1
+            type=raw,value=backrest,enable={{is_default_branch}}
 
       - name: Build and push Backrest image
         uses: docker/build-push-action@v5
@@ -341,7 +317,7 @@ jobs:
             APP_GID=1000
             TZ=UTC
             VERSION=1.9.1
-            BASE_IMAGE=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/base:1.0.0
+            BASE_IMAGE=${{ env.REGISTRY }}/${{ env.REPO_NAME }}:base-1.0.0
 
   # Job 7: Summary and cleanup
   build-summary:
@@ -355,12 +331,12 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Service | Status | Registry |" >> $GITHUB_STEP_SUMMARY
           echo "|---------|--------|----------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Base | ${{ needs.build-base.result }} | \`ghcr.io/${{ github.repository }}/base:1.0.0\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| PostgreSQL | ${{ needs.build-postgres.result }} | \`ghcr.io/${{ github.repository }}/postgres:17.5\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| Nginx | ${{ needs.build-nginx.result }} | \`ghcr.io/${{ github.repository }}/nginx:1.29.1\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| Redis | ${{ needs.build-redis.result }} | \`ghcr.io/${{ github.repository }}/redis:7.4.2\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| Pocket-ID | ${{ needs.build-pocket-id.result }} | \`ghcr.io/${{ github.repository }}/pocket-id:1.7.0\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| Backrest | ${{ needs.build-backrest.result }} | \`ghcr.io/${{ github.repository }}/backrest:1.9.1\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Base | ${{ needs.build-base.result }} | \`ghcr.io/${{ env.REPO_NAME }}:base-1.0.0\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| PostgreSQL | ${{ needs.build-postgres.result }} | \`ghcr.io/${{ env.REPO_NAME }}:postgres-17.5\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Nginx | ${{ needs.build-nginx.result }} | \`ghcr.io/${{ env.REPO_NAME }}:nginx-1.29.1\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Redis | ${{ needs.build-redis.result }} | \`ghcr.io/${{ env.REPO_NAME }}:redis-7.4.2\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Pocket-ID | ${{ needs.build-pocket-id.result }} | \`ghcr.io/${{ env.REPO_NAME }}:pocket-id-1.7.0\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Backrest | ${{ needs.build-backrest.result }} | \`ghcr.io/${{ env.REPO_NAME }}:backrest-1.9.1\` |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 📦 Usage" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
@@ -368,9 +344,9 @@ jobs:
           echo "docker compose --profile image up" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "# Or pull individual images" >> $GITHUB_STEP_SUMMARY
-          echo "docker pull ghcr.io/${{ github.repository }}/postgres:17.5" >> $GITHUB_STEP_SUMMARY
-          echo "docker pull ghcr.io/${{ github.repository }}/nginx:1.29.1" >> $GITHUB_STEP_SUMMARY
-          echo "docker pull ghcr.io/${{ github.repository }}/redis:7.4.2" >> $GITHUB_STEP_SUMMARY
-          echo "docker pull ghcr.io/${{ github.repository }}/pocket-id:1.7.0" >> $GITHUB_STEP_SUMMARY
-          echo "docker pull ghcr.io/${{ github.repository }}/backrest:1.9.1" >> $GITHUB_STEP_SUMMARY
+          echo "docker pull ghcr.io/${{ env.REPO_NAME }}:postgres-17.5" >> $GITHUB_STEP_SUMMARY
+          echo "docker pull ghcr.io/${{ env.REPO_NAME }}:nginx-1.29.1" >> $GITHUB_STEP_SUMMARY
+          echo "docker pull ghcr.io/${{ env.REPO_NAME }}:redis-7.4.2" >> $GITHUB_STEP_SUMMARY
+          echo "docker pull ghcr.io/${{ env.REPO_NAME }}:pocket-id-1.7.0" >> $GITHUB_STEP_SUMMARY
+          echo "docker pull ghcr.io/${{ env.REPO_NAME }}:backrest-1.9.1" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
