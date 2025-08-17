@@ -13,7 +13,7 @@ services:
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
     volumes:
-      - ./data:/var/lib/postgresql/data
+      - postgres-data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD", "/usr/local/bin/pg_isready", "-U", "postgres", "-d", "postgres"]
       interval: 30s
@@ -29,3 +29,6 @@ services:
       - no-new-privileges:true
     cap_drop:
       - ALL
+
+volumes:
+  postgres-data:
