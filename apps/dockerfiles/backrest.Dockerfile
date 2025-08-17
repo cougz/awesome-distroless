@@ -28,6 +28,7 @@ RUN npm install -g pnpm && pnpm install && pnpm run build
 FROM debian:trixie-slim AS backend-builder
 RUN apt-get update && apt-get install -y wget ca-certificates bzip2 && rm -rf /var/lib/apt/lists/*
 ARG GO_VERSION=1.24.6
+ARG BACKREST_VERSION=v1.9.1
 RUN wget -q "https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz" -O /tmp/go.tar.gz && \
     cd /tmp && tar -xzf go.tar.gz && mv go /usr/local/
 ENV PATH="/usr/local/go/bin:${PATH}"
@@ -37,8 +38,11 @@ COPY --from=source-stage /build /build
 COPY --from=frontend-builder /build/webui/dist ./webui/dist
 
 # Build the backend (skip go generate since frontend is already built)
+# Set version information in the binary
 RUN cd cmd/backrest && \
-    CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /tmp/backrest .
+    CGO_ENABLED=0 GOOS=linux go build \
+    -ldflags="-s -w -X main.version=${BACKREST_VERSION} -X main.commit=${BACKREST_VERSION}" \
+    -o /tmp/backrest .
 
 # Download and prepare restic dependency
 RUN cd /tmp && \
