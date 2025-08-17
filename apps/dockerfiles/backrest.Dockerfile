@@ -56,8 +56,8 @@ RUN cd /tmp && \
     chmod +x restic
 
 # Create data directory structure with proper ownership
-RUN mkdir -p /tmp/app-data /tmp/config /tmp/cache && \
-    chown -R 1000:1000 /tmp/app-data /tmp/config /tmp/cache
+RUN mkdir -p /tmp/app-data /tmp/config /tmp/cache /tmp/repos && \
+    chown -R 1000:1000 /tmp/app-data /tmp/config /tmp/cache /tmp/repos
 
 # Stage 4: Final application image using distroless base
 FROM distroless-base:0.2.0
@@ -75,6 +75,7 @@ COPY --from=backend-builder /tmp/restic /usr/local/bin/restic
 COPY --from=backend-builder --chown=1000:1000 /tmp/app-data /var/lib/backrest/data
 COPY --from=backend-builder --chown=1000:1000 /tmp/config /etc/backrest
 COPY --from=backend-builder --chown=1000:1000 /tmp/cache /var/cache/backrest
+COPY --from=backend-builder --chown=1000:1000 /tmp/repos /repos
 
 # Set working directory and environment
 WORKDIR /var/lib/backrest
@@ -90,6 +91,9 @@ LABEL org.opencontainers.image.title="Distroless Backrest Application"
 LABEL org.opencontainers.image.authors="cougz"
 LABEL org.opencontainers.image.source="https://github.com/garethgeorge/backrest"
 LABEL org.opencontainers.image.base.name="distroless-base:0.2.0"
+
+# Set user to run as
+USER 1000:1000
 
 # Expose port and set entrypoint
 EXPOSE 9898
