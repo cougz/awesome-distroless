@@ -60,7 +60,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.REPO_NAME }}:base
+          images: ${{ env.REGISTRY }}/${{ env.REPO_NAME }}
           tags: |
             type=raw,value=base-1.0.0
             type=raw,value=base,enable={{is_default_branch}}
@@ -103,7 +103,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.REPO_NAME }}:postgres
+          images: ${{ env.REGISTRY }}/${{ env.REPO_NAME }}
           tags: |
             type=raw,value=postgres-17.5
             type=raw,value=postgres,enable={{is_default_branch}}
@@ -154,7 +154,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.REPO_NAME }}:nginx
+          images: ${{ env.REGISTRY }}/${{ env.REPO_NAME }}
           tags: |
             type=raw,value=nginx-1.29.1
             type=raw,value=nginx,enable={{is_default_branch}}
@@ -201,7 +201,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.REPO_NAME }}:redis
+          images: ${{ env.REGISTRY }}/${{ env.REPO_NAME }}
           tags: |
             type=raw,value=redis-7.4.2
             type=raw,value=redis,enable={{is_default_branch}}
@@ -248,7 +248,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.REPO_NAME }}:pocket-id
+          images: ${{ env.REGISTRY }}/${{ env.REPO_NAME }}
           tags: |
             type=raw,value=pocket-id-1.7.0
             type=raw,value=pocket-id,enable={{is_default_branch}}
@@ -296,7 +296,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.REPO_NAME }}:backrest
+          images: ${{ env.REGISTRY }}/${{ env.REPO_NAME }}
           tags: |
             type=raw,value=backrest-1.9.1
             type=raw,value=backrest,enable={{is_default_branch}}
