@@ -1,0 +1,85 @@
+name: backrest
+
+services:
+  backrest-app:
+    container_name: "${COMPOSE_PROJECT_NAME:-backrest}-app"
+    profiles:
+      - build
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        APP_UID: "${APP_UID:-1000}"
+        APP_GID: "${APP_GID:-1000}"
+        TZ: "${TZ:-UTC}"
+        VERSION: "${BACKREST_VERSION:-1.9.1}"
+        BASE_IMAGE: "ghcr.io/cougz/awesome-distroless/base:1.0.0"
+    image: ghcr.io/cougz/awesome-distroless/backrest:1.9.1
+    ports:
+      - "${WEB_PORT:-9898}:9898"
+    environment:
+      BACKREST_PORT: "${BACKREST_PORT:-0.0.0.0:9898}"
+      BACKREST_DATA: "/var/lib/backrest/data"
+      BACKREST_CONFIG: "/etc/backrest/config.json"
+      XDG_CACHE_HOME: "/var/cache/backrest"
+      TMPDIR: "/tmp"
+      TZ: "${TZ:-UTC}"
+      BACKREST_RESTIC_COMMAND: "/usr/local/bin/restic"
+    volumes:
+      - data:/var/lib/backrest/data
+      - config:/etc/backrest
+      - cache:/var/cache/backrest
+      - "${BACKUP_SOURCE_PATH:-./data}:/userdata:ro"
+      - repos:/repos
+    restart: unless-stopped
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    tmpfs:
+      - "/tmp:size=${TMPFS_SIZE:-2G},noexec,nosuid,nodev"
+    networks:
+      - backrest
+
+  backrest-app-image:
+    container_name: "${COMPOSE_PROJECT_NAME:-backrest}-app"
+    profiles:
+      - image
+    image: ghcr.io/cougz/awesome-distroless/backrest:1.9.1
+    ports:
+      - "${WEB_PORT:-9898}:9898"
+    environment:
+      BACKREST_PORT: "${BACKREST_PORT:-0.0.0.0:9898}"
+      BACKREST_DATA: "/var/lib/backrest/data"
+      BACKREST_CONFIG: "/etc/backrest/config.json"
+      XDG_CACHE_HOME: "/var/cache/backrest"
+      TMPDIR: "/tmp"
+      TZ: "${TZ:-UTC}"
+      BACKREST_RESTIC_COMMAND: "/usr/local/bin/restic"
+    volumes:
+      - data:/var/lib/backrest/data
+      - config:/etc/backrest
+      - cache:/var/cache/backrest
+      - "${BACKUP_SOURCE_PATH:-./data}:/userdata:ro"
+      - repos:/repos
+    restart: unless-stopped
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    tmpfs:
+      - "/tmp:size=${TMPFS_SIZE:-2G},noexec,nosuid,nodev"
+    networks:
+      - backrest
+
+volumes:
+  data:
+  config:
+  cache:
+  repos:
+
+networks:
+  backrest:
+    driver: bridge

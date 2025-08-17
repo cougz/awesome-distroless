@@ -24,7 +24,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        service: [base, postgres, nginx, redis]
+        service: [base, postgres, nginx, redis, pocket-id, backrest]
         include:
           - service: base
             tag: "1.0.0"
@@ -34,6 +34,10 @@ jobs:
             tag: "1.29.1"
           - service: redis
             tag: "7.4.2"
+          - service: pocket-id
+            tag: "1.7.0"
+          - service: backrest
+            tag: "1.9.1"
     steps:
       - name: Log in to Container Registry
         uses: docker/login-action@v3
