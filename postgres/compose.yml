@@ -3,10 +3,24 @@ services:
     build:
       context: ..
       dockerfile: postgres/Dockerfile
+      args:
+        VERSION: ${VERSION:-17.5}
+        APP_UID: ${APP_UID:-1000}
+        APP_GID: ${APP_GID:-1000}
+        TZ: ${TZ:-UTC}
+        POSTGRES_USER: ${POSTGRES_USER:-postgres}
+        POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+        POSTGRES_DB: ${POSTGRES_DB:-postgres}
     image: distroless-postgres:17.5
     container_name: distroless-postgres
     environment:
       TZ: ${TZ:-UTC}
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/pg_isready", "-U", "${POSTGRES_USER:-postgres}", "-d", "${POSTGRES_DB:-postgres}"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
     volumes:

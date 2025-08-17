@@ -136,9 +136,9 @@ EXPOSE 5432
 LABEL org.opencontainers.image.title="Distroless PostgreSQL"
 LABEL org.opencontainers.image.description="Minimal distroless PostgreSQL image"
 LABEL org.opencontainers.image.version="${VERSION}"
-LABEL org.opencontainers.image.source="https://github.com/cougz/docker-distroless"
+LABEL org.opencontainers.image.source="https://github.com/cougz/awesome-distroless"
 
-# Health check (using default postgres user since health check needs hardcoded values)
+# Health check (overridden in compose.yml to use configurable values)
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
   CMD ["/usr/local/bin/pg_isready", "-U", "postgres", "-d", "postgres"]
 
