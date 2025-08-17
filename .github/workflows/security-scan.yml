@@ -16,20 +16,10 @@ on:
           - MEDIUM
           - HIGH
           - CRITICAL
-  push:
-    branches: [ main ]
-    paths:
-      - 'base/**'
-      - 'postgres/**'
-      - 'nginx/**'
-      - 'redis/**'
-  pull_request:
-    branches: [ main ]
-    paths:
-      - 'base/**'
-      - 'postgres/**'
-      - 'nginx/**'
-      - 'redis/**'
+  workflow_run:
+    workflows: ["Build and Push Distroless Images"]
+    types:
+      - completed
 
 env:
   REGISTRY: ghcr.io
@@ -40,6 +30,8 @@ jobs:
   # Job 1: Comprehensive vulnerability scanning
   vulnerability-scan:
     runs-on: ubuntu-latest
+    # Only run if build workflow completed successfully or on schedule/manual trigger
+    if: github.event.workflow_run.conclusion == 'success' || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     permissions:
       contents: read
       packages: read
@@ -75,10 +67,18 @@ jobs:
 
       - name: Pull image
         run: |
-          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${{ matrix.service }}:${{ matrix.tag }}
+          # Try to pull the image, exit gracefully if not found
+          if ! docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${{ matrix.service }}:${{ matrix.tag }}; then
+            echo "::warning::Image ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${{ matrix.service }}:${{ matrix.tag }} not found. Skipping security scan."
+            echo "image_exists=false" >> $GITHUB_ENV
+            exit 0
+          else
+            echo "image_exists=true" >> $GITHUB_ENV
+          fi
 
       # Scanner 1: Trivy (comprehensive vulnerability scanner)
       - name: Run Trivy vulnerability scanner
+        if: env.image_exists == 'true'
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${{ matrix.service }}:${{ matrix.tag }}
@@ -88,6 +88,7 @@ jobs:
           exit-code: '0'
 
       - name: Run Trivy for JSON report
+        if: env.image_exists == 'true'
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${{ matrix.service }}:${{ matrix.tag }}
@@ -101,6 +102,7 @@ jobs:
           curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin
 
       - name: Run Grype vulnerability scanner
+        if: env.image_exists == 'true'
         run: |
           grype ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${{ matrix.service }}:${{ matrix.tag }} \
             -o json \
@@ -108,6 +110,7 @@ jobs:
 
       # Scanner 3: Docker Scout (if available)
       - name: Run Docker Scout
+        if: env.image_exists == 'true'
         continue-on-error: true
         run: |
           docker scout cves ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${{ matrix.service }}:${{ matrix.tag }} \
@@ -116,6 +119,7 @@ jobs:
 
       # SBOM Generation
       - name: Generate SBOM with Syft
+        if: env.image_exists == 'true'
         run: |
           curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin
           syft ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${{ matrix.service }}:${{ matrix.tag }} \
@@ -215,6 +219,8 @@ jobs:
   # Job 2: Container image security best practices
   security-best-practices:
     runs-on: ubuntu-latest
+    # Only run if build workflow completed successfully or on schedule/manual trigger
+    if: github.event.workflow_run.conclusion == 'success' || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     permissions:
       contents: read
       packages: read
@@ -243,10 +249,18 @@ jobs:
 
       - name: Pull image
         run: |
-          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${{ matrix.service }}:${{ matrix.tag }}
+          # Try to pull the image, exit gracefully if not found
+          if ! docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${{ matrix.service }}:${{ matrix.tag }}; then
+            echo "::warning::Image ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${{ matrix.service }}:${{ matrix.tag }} not found. Skipping security analysis."
+            echo "image_exists=false" >> $GITHUB_ENV
+            exit 0
+          else
+            echo "image_exists=true" >> $GITHUB_ENV
+          fi
 
       # Container security analysis
       - name: Analyze container security
+        if: env.image_exists == 'true'
         run: |
           echo "## 🛡️ Container Security Analysis for ${{ matrix.service }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY

@@ -31,9 +31,9 @@ This directory contains GitHub Actions workflows that automatically build, test,
 **Purpose**: Performs security vulnerability scanning on all built images.
 
 **Triggers**:
-- Weekly schedule (Sundays at 2 AM UTC)
+- Daily schedule (2 AM UTC)
 - Manual dispatch
-- Push to `main` branch (when Dockerfiles change)
+- After successful image builds (workflow_run trigger)
 
 **Features**:
 - **Trivy vulnerability scanner** integration
