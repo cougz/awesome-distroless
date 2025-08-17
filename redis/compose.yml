@@ -10,7 +10,7 @@ services:
     ports:
       - "${REDIS_PORT:-6379}:6379"
     volumes:
-      - ./data:/data
+      - redis-data:/data
       - ./redis.conf:/etc/redis/redis.conf:ro
     healthcheck:
       test: ["CMD", "/usr/local/bin/redis-cli", "ping"]
@@ -26,3 +26,6 @@ services:
       - no-new-privileges:true
     cap_drop:
       - ALL
+
+volumes:
+  redis-data:
