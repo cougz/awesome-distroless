@@ -10,6 +10,4 @@ services:
         TZ: UTC
     image: distroless-base:1.0.0
     container_name: distroless-base-test
-    # This is a base image - no meaningful CMD to run
-    # Used for testing the build process
     command: ["sleep", "1"]

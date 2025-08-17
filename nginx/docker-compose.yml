@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   nginx:
     build:
@@ -17,7 +15,6 @@ services:
     ports:
       - "${NGINX_PORT:-8080}:8080"
     volumes:
-      # Bind mounts for content and configuration
       - ./html:/usr/share/nginx/html:ro
       - ./config:/etc/nginx/conf.d:ro
     healthcheck:
@@ -27,17 +24,13 @@ services:
       retries: 3
       start_period: 10s
     restart: unless-stopped
-    # Read-only root filesystem for security
     read_only: true
     tmpfs:
-      # Nginx needs write access to temp directories
       - /tmp:noexec,nosuid,size=50m
-    # Security settings
     security_opt:
       - no-new-privileges:true
     cap_drop:
       - ALL
-    # Resource limits
     deploy:
       resources:
         limits:
