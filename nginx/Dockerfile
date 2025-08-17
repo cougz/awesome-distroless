@@ -4,6 +4,9 @@ ARG APP_GID=1000
 ARG TZ=UTC
 ARG VERSION=1.29.1
 
+# Global ARG for base image
+ARG BASE_IMAGE=distroless-base:1.0.0
+
 # Build stage
 FROM debian:trixie-slim AS builder
 
@@ -223,8 +226,7 @@ RUN cat > /usr/share/nginx/html/50x.html << 'EOF'
 EOF
 
 # Final stage
-ARG BASE_IMAGE=distroless-base:1.0.0
-FROM ${BASE_IMAGE}
+FROM $BASE_IMAGE
 
 ARG VERSION
 ARG APP_UID

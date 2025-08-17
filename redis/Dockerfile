@@ -5,6 +5,9 @@ ARG TZ=UTC
 ARG VERSION=7.4.2
 
 # Build stage
+# Global ARG for base image
+ARG BASE_IMAGE=distroless-base:1.0.0
+
 FROM debian:trixie-slim AS builder
 
 ARG VERSION
@@ -37,8 +40,7 @@ RUN mkdir -p /data && \
     chown ${APP_UID}:${APP_GID} /data
 
 # Final stage
-ARG BASE_IMAGE=distroless-base:1.0.0
-FROM ${BASE_IMAGE}
+FROM $BASE_IMAGE
 
 ARG VERSION
 ARG APP_UID

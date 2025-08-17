@@ -7,6 +7,9 @@ ARG POSTGRES_USER=postgres
 ARG POSTGRES_PASSWORD=postgres
 ARG POSTGRES_DB=postgres
 
+# Global ARG for base image
+ARG BASE_IMAGE=distroless-base:1.0.0
+
 # Build stage
 FROM debian:trixie-slim AS builder
 
@@ -93,8 +96,7 @@ RUN mkdir -p /tmp/pgdata-final/tmp && \
 
 
 # Final stage
-ARG BASE_IMAGE=distroless-base:1.0.0
-FROM ${BASE_IMAGE}
+FROM $BASE_IMAGE
 
 ARG VERSION
 ARG APP_UID
