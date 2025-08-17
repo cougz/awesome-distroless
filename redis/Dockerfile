@@ -37,7 +37,8 @@ RUN mkdir -p /data && \
     chown ${APP_UID}:${APP_GID} /data
 
 # Final stage
-FROM distroless-base:1.0.0
+ARG BASE_IMAGE=distroless-base:1.0.0
+FROM ${BASE_IMAGE}
 
 ARG VERSION
 ARG APP_UID

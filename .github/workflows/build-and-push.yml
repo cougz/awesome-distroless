@@ -127,9 +127,11 @@ jobs:
             APP_UID=1000
             APP_GID=1000
             TZ=UTC
+            BASE_IMAGE=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/base:1.0.0
             POSTGRES_USER=postgres
             POSTGRES_PASSWORD=postgres
             POSTGRES_DB=postgres
+            BASE_IMAGE=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/base:1.0.0
 
   # Job 3: Build Nginx image
   build-nginx:
@@ -180,6 +182,7 @@ jobs:
             APP_UID=1000
             APP_GID=1000
             TZ=UTC
+            BASE_IMAGE=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/base:1.0.0
 
   # Job 4: Build Redis image
   build-redis:
@@ -230,6 +233,7 @@ jobs:
             APP_UID=1000
             APP_GID=1000
             TZ=UTC
+            BASE_IMAGE=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/base:1.0.0
 
   # Job 5: Summary and cleanup
   build-summary:
