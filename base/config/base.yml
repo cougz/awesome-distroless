@@ -1,4 +1,0 @@
-name: base
-version: "0.2.0"
-description: "Minimal distroless base image"
-category: "infrastructure"

@@ -1,0 +1,15 @@
+services:
+  base:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        VERSION: 1.0.0
+        APP_UID: 1000
+        APP_GID: 1000
+        TZ: UTC
+    image: distroless-base:1.0.0
+    container_name: distroless-base-test
+    # This is a base image - no meaningful CMD to run
+    # Used for testing the build process
+    command: ["sleep", "1"]

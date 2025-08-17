@@ -1,6 +1,0 @@
-name: go
-version: "1.24.6"
-description: "Go programming language"
-category: "development"
-build:
-  test_command: "go version"

@@ -1,6 +1,0 @@
-name: node
-version: "24.5.0"
-description: "Node.js runtime with npm"
-category: "development"
-build:
-  test_command: "node --version"
