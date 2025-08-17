@@ -13,7 +13,7 @@ services:
         APP_GID: "${APP_GID:-1000}"
         TZ: "${TZ:-UTC}"
         VERSION: "${BACKREST_VERSION:-1.9.1}"
-        BASE_IMAGE: "ghcr.io/cougz/awesome-distroless:base-1.0.0"
+        BASE_IMAGE: "ghcr.io/cougz/awesome-distroless/base:1.0.0"
     image: backrest:1.9.1
     ports:
       - "${WEB_PORT:-9898}:9898"
