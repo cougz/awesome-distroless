@@ -6,7 +6,7 @@ services:
     profiles:
       - build
       - image
-    image: ghcr.io/cougz/awesome-distroless/postgres:17.5
+    image: distroless-postgres:17.5
     environment:
       POSTGRES_DB: "${POSTGRES_DB:-postgres}"
       POSTGRES_USER: "${POSTGRES_USER:-postgres}"
@@ -47,9 +47,9 @@ services:
         TZ: "${TZ:-UTC}"
         VERSION: "${POCKET_ID_VERSION:-1.7.0}"
         BASE_IMAGE: "ghcr.io/cougz/awesome-distroless/base:1.0.0"
-    image: ghcr.io/cougz/awesome-distroless/pocket-id:1.7.0
+    image: pocket-id:1.7.0
     ports:
-      - "${WEB_PORT:-3000}:3000"
+      - "${WEB_PORT:-3000}:1411"
     environment:
       DB_PROVIDER: "postgres"
       DB_CONNECTION_STRING: "postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@pocket-id-database:5432/${POSTGRES_DB:-postgres}"
@@ -76,9 +76,9 @@ services:
         condition: service_healthy
     profiles:
       - image
-    image: ghcr.io/cougz/awesome-distroless/pocket-id:1.7.0
+    image: pocket-id:1.7.0
     ports:
-      - "${WEB_PORT:-3000}:3000"
+      - "${WEB_PORT:-3000}:1411"
     environment:
       DB_PROVIDER: "postgres"
       DB_CONNECTION_STRING: "postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@pocket-id-database:5432/${POSTGRES_DB:-postgres}"

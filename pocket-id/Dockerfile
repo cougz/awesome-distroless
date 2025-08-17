@@ -86,10 +86,6 @@ COPY --from=backend-builder --chown=${APP_UID}:${APP_GID} /tmp/app-data /app/dat
 # Set working directory
 WORKDIR /app
 
-# Create non-root user
-RUN groupadd -r -g ${APP_GID} pocket-id && \
-    useradd -r -g pocket-id -u ${APP_UID} -s /bin/false pocket-id
-
 # Labels
 LABEL distroless.app="pocket-id"
 LABEL org.opencontainers.image.description="Distroless pocket-id application built from source"
@@ -105,8 +101,8 @@ USER ${APP_UID}:${APP_GID}
 # Set timezone
 ENV TZ=${TZ}
 
-# Expose port 3000 (default for pocket-id)
-EXPOSE 3000
+# Expose port 1411 (default for pocket-id)
+EXPOSE 1411
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \

@@ -92,10 +92,6 @@ COPY --from=backend-builder --chown=${APP_UID}:${APP_GID} /tmp/config /etc/backr
 COPY --from=backend-builder --chown=${APP_UID}:${APP_GID} /tmp/cache /var/cache/backrest
 COPY --from=backend-builder --chown=${APP_UID}:${APP_GID} /tmp/repos /repos
 
-# Create non-root user
-RUN groupadd -r -g ${APP_GID} backrest && \
-    useradd -r -g backrest -u ${APP_UID} -s /bin/false backrest
-
 # Set working directory and environment
 WORKDIR /var/lib/backrest
 ENV BACKREST_DATA="/var/lib/backrest/data"
