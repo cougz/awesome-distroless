@@ -1,0 +1,337 @@
+name: Security Scan
+
+on:
+  schedule:
+    # Run comprehensive security scans daily at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      severity_threshold:
+        description: 'Minimum severity to report (LOW, MEDIUM, HIGH, CRITICAL)'
+        required: false
+        default: 'MEDIUM'
+        type: choice
+        options:
+          - LOW
+          - MEDIUM
+          - HIGH
+          - CRITICAL
+  push:
+    branches: [ main ]
+    paths:
+      - 'base/**'
+      - 'postgres/**'
+      - 'nginx/**'
+      - 'redis/**'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'base/**'
+      - 'postgres/**'
+      - 'nginx/**'
+      - 'redis/**'
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+  SEVERITY_THRESHOLD: ${{ github.event.inputs.severity_threshold || 'MEDIUM' }}
+
+jobs:
+  # Job 1: Comprehensive vulnerability scanning
+  vulnerability-scan:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+      security-events: write
+      issues: write
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [base, postgres, nginx, redis]
+        include:
+          - service: base
+            tag: "1.0.0"
+            critical_threshold: 0
+          - service: postgres
+            tag: "17.5"
+            critical_threshold: 0
+          - service: nginx
+            tag: "1.29.1"
+            critical_threshold: 0
+          - service: redis
+            tag: "7.4.2"
+            critical_threshold: 0
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Pull image
+        run: |
+          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${{ matrix.service }}:${{ matrix.tag }}
+
+      # Scanner 1: Trivy (comprehensive vulnerability scanner)
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${{ matrix.service }}:${{ matrix.tag }}
+          format: 'sarif'
+          output: 'trivy-results-${{ matrix.service }}.sarif'
+          severity: '${{ env.SEVERITY_THRESHOLD }},HIGH,CRITICAL'
+          exit-code: '0'
+
+      - name: Run Trivy for JSON report
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${{ matrix.service }}:${{ matrix.tag }}
+          format: 'json'
+          output: 'trivy-results-${{ matrix.service }}.json'
+          severity: '${{ env.SEVERITY_THRESHOLD }},HIGH,CRITICAL'
+
+      # Scanner 2: Grype (alternative vulnerability scanner)
+      - name: Install Grype
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin
+
+      - name: Run Grype vulnerability scanner
+        run: |
+          grype ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${{ matrix.service }}:${{ matrix.tag }} \
+            -o json \
+            --file grype-results-${{ matrix.service }}.json
+
+      # Scanner 3: Docker Scout (if available)
+      - name: Run Docker Scout
+        continue-on-error: true
+        run: |
+          docker scout cves ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${{ matrix.service }}:${{ matrix.tag }} \
+            --format sarif \
+            --output scout-results-${{ matrix.service }}.sarif || echo "Docker Scout not available"
+
+      # SBOM Generation
+      - name: Generate SBOM with Syft
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin
+          syft ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${{ matrix.service }}:${{ matrix.tag }} \
+            -o spdx-json=sbom-${{ matrix.service }}.spdx.json
+
+      # Upload security results
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-results-${{ matrix.service }}.sarif'
+          category: '${{ matrix.service }}-trivy-scan'
+
+      - name: Upload Docker Scout results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        if: always() && hashFiles('scout-results-${{ matrix.service }}.sarif') != ''
+        with:
+          sarif_file: 'scout-results-${{ matrix.service }}.sarif'
+          category: '${{ matrix.service }}-scout-scan'
+
+      # Analyze scan results
+      - name: Parse vulnerability results
+        id: parse-vulns
+        run: |
+          # Parse Trivy JSON results
+          if [ -f "trivy-results-${{ matrix.service }}.json" ]; then
+            CRITICAL=$(cat trivy-results-${{ matrix.service }}.json | jq '[.Results[]?.Vulnerabilities[]? | select(.Severity == "CRITICAL")] | length')
+            HIGH=$(cat trivy-results-${{ matrix.service }}.json | jq '[.Results[]?.Vulnerabilities[]? | select(.Severity == "HIGH")] | length')
+            MEDIUM=$(cat trivy-results-${{ matrix.service }}.json | jq '[.Results[]?.Vulnerabilities[]? | select(.Severity == "MEDIUM")] | length')
+            LOW=$(cat trivy-results-${{ matrix.service }}.json | jq '[.Results[]?.Vulnerabilities[]? | select(.Severity == "LOW")] | length')
+          else
+            CRITICAL=0
+            HIGH=0
+            MEDIUM=0
+            LOW=0
+          fi
+          
+          echo "critical=$CRITICAL" >> $GITHUB_OUTPUT
+          echo "high=$HIGH" >> $GITHUB_OUTPUT
+          echo "medium=$MEDIUM" >> $GITHUB_OUTPUT
+          echo "low=$LOW" >> $GITHUB_OUTPUT
+          
+          # Check if we exceed critical threshold
+          if [ "$CRITICAL" -gt "${{ matrix.critical_threshold }}" ]; then
+            echo "critical_exceeded=true" >> $GITHUB_OUTPUT
+          fi
+
+      # Generate comprehensive security report
+      - name: Generate security summary
+        run: |
+          echo "## 🔒 Security Scan Results for ${{ matrix.service }}:${{ matrix.tag }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📊 Vulnerability Summary" >> $GITHUB_STEP_SUMMARY
+          echo "| Severity | Count |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| 🔴 Critical | ${{ steps.parse-vulns.outputs.critical }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🟠 High | ${{ steps.parse-vulns.outputs.high }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🟡 Medium | ${{ steps.parse-vulns.outputs.medium }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🔵 Low | ${{ steps.parse-vulns.outputs.low }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ steps.parse-vulns.outputs.critical }}" -gt "0" ] || [ "${{ steps.parse-vulns.outputs.high }}" -gt "0" ]; then
+            echo "### ⚠️ Security Recommendations" >> $GITHUB_STEP_SUMMARY
+            echo "- Review vulnerabilities in the Security tab" >> $GITHUB_STEP_SUMMARY
+            echo "- Consider updating base dependencies" >> $GITHUB_STEP_SUMMARY
+            echo "- Check for available patches" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "### 🔍 Detailed Trivy Report" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          trivy image --format table --no-progress --severity ${{ env.SEVERITY_THRESHOLD }},HIGH,CRITICAL \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${{ matrix.service }}:${{ matrix.tag }} >> $GITHUB_STEP_SUMMARY || true
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
+      # Store artifacts
+      - name: Upload security scan artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: security-reports-${{ matrix.service }}
+          path: |
+            trivy-results-${{ matrix.service }}.*
+            grype-results-${{ matrix.service }}.json
+            scout-results-${{ matrix.service }}.sarif
+            sbom-${{ matrix.service }}.spdx.json
+          retention-days: 30
+
+      # Fail job if critical vulnerabilities exceed threshold
+      - name: Fail on critical vulnerabilities
+        if: steps.parse-vulns.outputs.critical_exceeded == 'true'
+        run: |
+          echo "❌ Critical vulnerability threshold exceeded!"
+          echo "Found ${{ steps.parse-vulns.outputs.critical }} critical vulnerabilities (threshold: ${{ matrix.critical_threshold }})"
+          exit 1
+
+  # Job 2: Container image security best practices
+  security-best-practices:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+    strategy:
+      matrix:
+        service: [base, postgres, nginx, redis]
+        include:
+          - service: base
+            tag: "1.0.0"
+          - service: postgres
+            tag: "17.5"
+          - service: nginx
+            tag: "1.29.1"
+          - service: redis
+            tag: "7.4.2"
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Pull image
+        run: |
+          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${{ matrix.service }}:${{ matrix.tag }}
+
+      # Container security analysis
+      - name: Analyze container security
+        run: |
+          echo "## 🛡️ Container Security Analysis for ${{ matrix.service }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Check image size
+          SIZE=$(docker images ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${{ matrix.service }}:${{ matrix.tag }} --format "table {{.Size}}" | tail -n 1)
+          echo "**Image Size**: $SIZE" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Check for non-root user
+          USER_CHECK=$(docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${{ matrix.service }}:${{ matrix.tag }} whoami 2>/dev/null || echo "No shell available (good for security)")
+          echo "**User Check**: $USER_CHECK" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Check image history (layers)
+          echo "### 📜 Image Layers" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          docker history --no-trunc ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${{ matrix.service }}:${{ matrix.tag }} | head -10 >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
+  # Job 3: Security summary and notifications
+  security-summary:
+    runs-on: ubuntu-latest
+    needs: [vulnerability-scan, security-best-practices]
+    if: always()
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - name: Generate overall security summary
+        run: |
+          echo "## 🔐 Overall Security Status" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Service | Scan Status | Best Practices |" >> $GITHUB_STEP_SUMMARY
+          echo "|---------|-------------|----------------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Base | ${{ needs.vulnerability-scan.result }} | ${{ needs.security-best-practices.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| PostgreSQL | ${{ needs.vulnerability-scan.result }} | ${{ needs.security-best-practices.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Nginx | ${{ needs.vulnerability-scan.result }} | ${{ needs.security-best-practices.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Redis | ${{ needs.vulnerability-scan.result }} | ${{ needs.security-best-practices.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📋 Next Steps" >> $GITHUB_STEP_SUMMARY
+          echo "1. Review vulnerability details in the **Security** tab" >> $GITHUB_STEP_SUMMARY
+          echo "2. Download security reports from workflow artifacts" >> $GITHUB_STEP_SUMMARY
+          echo "3. Address any critical or high-severity vulnerabilities" >> $GITHUB_STEP_SUMMARY
+          echo "4. Monitor for new vulnerabilities with daily scans" >> $GITHUB_STEP_SUMMARY
+
+      - name: Create security issue if vulnerabilities found
+        if: needs.vulnerability-scan.result == 'failure'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = `🚨 Security vulnerabilities detected in distroless images`;
+            const body = `## Security Alert
+            
+            High or critical vulnerabilities have been detected in one or more distroless images.
+            
+            **Action Required:**
+            1. Review the vulnerability details in the [Security tab](${context.payload.repository.html_url}/security/code-scanning)
+            2. Download detailed reports from the [workflow artifacts](${context.payload.repository.html_url}/actions/runs/${context.runId})
+            3. Update affected dependencies or base images
+            4. Re-run security scans to verify fixes
+            
+            **Workflow Run:** [#${context.runId}](${context.payload.repository.html_url}/actions/runs/${context.runId})
+            
+            ---
+            *This issue was automatically created by the security scanning workflow.*`;
+            
+            // Check if similar issue exists
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: ['security', 'vulnerability']
+            });
+            
+            const existingIssue = issues.data.find(issue => 
+              issue.title.includes('Security vulnerabilities detected')
+            );
+            
+            if (!existingIssue) {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: title,
+                body: body,
+                labels: ['security', 'vulnerability', 'high-priority']
+              });
+            }

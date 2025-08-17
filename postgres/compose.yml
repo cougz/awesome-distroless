@@ -1,10 +1,18 @@
+# PostgreSQL Service - supports both build and image deployment modes
+#
+# Usage:
+#   Build from source:     docker compose --profile build up
+#   Deploy from image:     docker compose --profile image up
+#   Default (build mode):  docker compose up
+
 services:
+  # Build from source (default)
   postgres:
+    profiles: ["build", ""]
     build:
       context: ..
       dockerfile: postgres/Dockerfile
       args:
-        VERSION: ${VERSION:-17.5}
         APP_UID: ${APP_UID:-1000}
         APP_GID: ${APP_GID:-1000}
         TZ: ${TZ:-UTC}
@@ -25,12 +33,33 @@ services:
       - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp:noexec,nosuid,size=100m
+      - /run:noexec,nosuid,size=10m
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+  # Deploy from pre-built image
+  postgres-image:
+    profiles: ["image"]
+    image: ghcr.io/cougz/awesome-distroless/postgres:17.5
+    container_name: distroless-postgres
+    environment:
+      TZ: ${TZ:-UTC}
     healthcheck:
       test: ["CMD", "/usr/local/bin/pg_isready", "-U", "postgres", "-d", "postgres"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 60s
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
     restart: unless-stopped
     read_only: true
     tmpfs:
