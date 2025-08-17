@@ -1,6 +1,11 @@
 # Auto-generated Dockerfile for nginx
 # Based on https://github.com/cougz/docker-distroless
 
+# Build arguments for configurable UID/GID
+ARG APP_UID=1000
+ARG APP_GID=1000
+ARG TOOL_VERSION=1.29.1
+
 # Stage 1: Base builder
 FROM debian:trixie-slim AS base-builder
 
@@ -9,8 +14,10 @@ RUN apt-get update && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-RUN echo "app:x:1000:1000:app user:/home/app:/sbin/nologin" > /etc/passwd.minimal && \
-    echo "app:x:1000:" > /etc/group.minimal
+ARG APP_UID=1000
+ARG APP_GID=1000
+RUN echo "app:x:${APP_UID}:${APP_GID}:app user:/home/app:/sbin/nologin" > /etc/passwd.minimal && \
+    echo "app:x:${APP_GID}:" > /etc/group.minimal
 
 RUN echo "hosts: files dns" > /etc/nsswitch.conf
 
@@ -29,6 +36,8 @@ RUN apt-get update && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
+ARG APP_UID=1000
+ARG APP_GID=1000
 ARG TOOL_VERSION=1.29.1
 RUN wget -q "http://nginx.org/download/nginx-${TOOL_VERSION}.tar.gz" -O /tmp/nginx.tar.gz && \
     cd /tmp && \
@@ -75,14 +84,19 @@ RUN wget -q "http://nginx.org/download/nginx-${TOOL_VERSION}.tar.gz" -O /tmp/ngi
     strip /usr/local/bin/nginx || true
 
 # Create necessary directories and set permissions
-RUN mkdir -p /etc/nginx/conf.d /var/log/nginx /var/cache/nginx /var/run /usr/share/nginx/html && \
+RUN mkdir -p /etc/nginx/conf.d /etc/ssl/certs /etc/ssl/private /var/log/nginx /var/cache/nginx /var/run /usr/share/nginx/html && \
     for dir in client_temp proxy_temp fastcgi_temp uwsgi_temp scgi_temp; do \
         mkdir -p /var/cache/nginx/$dir; \
     done
 
+# Generate self-signed certificate for HTTPS
+RUN openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+    -keyout /etc/ssl/private/nginx-selfsigned.key \
+    -out /etc/ssl/certs/nginx-selfsigned.crt \
+    -subj "/C=US/ST=Local/L=Local/O=Nginx/OU=IT Department/CN=localhost"
+
 # Create basic nginx configuration
 RUN cat > /etc/nginx/nginx.conf << 'EOF'
-user app;
 worker_processes auto;
 error_log /var/log/nginx/error.log warn;
 pid /var/run/nginx.pid;
@@ -119,6 +133,36 @@ http {
         listen 80;
         listen [::]:80;
         server_name localhost;
+
+        location / {
+            root /usr/share/nginx/html;
+            index index.html index.htm;
+        }
+
+        error_page 500 502 503 504 /50x.html;
+        location = /50x.html {
+            root /usr/share/nginx/html;
+        }
+    }
+
+    server {
+        listen 443 ssl;
+        listen [::]:443 ssl;
+        http2 on;
+        server_name localhost;
+
+        ssl_certificate /etc/ssl/certs/nginx-selfsigned.crt;
+        ssl_certificate_key /etc/ssl/private/nginx-selfsigned.key;
+
+        ssl_session_timeout 1d;
+        ssl_session_cache shared:MozTLS:10m;
+        ssl_session_tickets off;
+
+        ssl_protocols TLSv1.2 TLSv1.3;
+        ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384;
+        ssl_prefer_server_ciphers off;
+
+        add_header Strict-Transport-Security "max-age=63072000" always;
 
         location / {
             root /usr/share/nginx/html;
@@ -262,8 +306,8 @@ Please try again later.</p>
 </html>
 EOF
 
-# Set ownership for app user (UID 1000)
-RUN chown -R 1000:1000 /etc/nginx /var/log/nginx /var/cache/nginx /var/run /usr/share/nginx
+# Set ownership for app user
+RUN chown -R ${APP_UID}:${APP_GID} /etc/nginx /etc/ssl /var/log/nginx /var/cache/nginx /var/run /usr/share/nginx
 
 # Stage 3: Final distroless image
 FROM distroless-base:0.2.0
@@ -290,13 +334,17 @@ COPY --from=base-builder /lib/x86_64-linux-gnu/libpcre2-8.so.0 /lib/x86_64-linux
 COPY --from=base-builder /lib/x86_64-linux-gnu/libcrypt.so.1 /lib/x86_64-linux-gnu/libcrypt.so.1
 COPY --from=base-builder /usr/lib/x86_64-linux-gnu/libzstd.so.1 /usr/lib/x86_64-linux-gnu/libzstd.so.1
 
+ARG APP_UID=1000
+ARG APP_GID=1000
+
 # Copy nginx binary and configuration (preserve ownership)
-COPY --from=tool-builder --chown=1000:1000 /usr/local/bin/nginx /usr/local/bin/nginx
-COPY --from=tool-builder --chown=1000:1000 /etc/nginx /etc/nginx
-COPY --from=tool-builder --chown=1000:1000 /var/log/nginx /var/log/nginx
-COPY --from=tool-builder --chown=1000:1000 /var/cache/nginx /var/cache/nginx
-COPY --from=tool-builder --chown=1000:1000 /var/run /var/run
-COPY --from=tool-builder --chown=1000:1000 /usr/share/nginx /usr/share/nginx
+COPY --from=tool-builder --chown=${APP_UID}:${APP_GID} /usr/local/bin/nginx /usr/local/bin/nginx
+COPY --from=tool-builder --chown=${APP_UID}:${APP_GID} /etc/nginx /etc/nginx
+COPY --from=tool-builder --chown=${APP_UID}:${APP_GID} /etc/ssl /etc/ssl
+COPY --from=tool-builder --chown=${APP_UID}:${APP_GID} /var/log/nginx /var/log/nginx
+COPY --from=tool-builder --chown=${APP_UID}:${APP_GID} /var/cache/nginx /var/cache/nginx
+COPY --from=tool-builder --chown=${APP_UID}:${APP_GID} /var/run /var/run
+COPY --from=tool-builder --chown=${APP_UID}:${APP_GID} /usr/share/nginx /usr/share/nginx
 
 # Environment
 ENV PATH="/usr/local/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin"
@@ -306,7 +354,7 @@ ENV TZ="UTC"
 ENV SSL_CERT_FILE="/etc/ssl/certs/ca-certificates.crt"
 
 WORKDIR /home/app
-USER 1000:1000
+USER ${APP_UID}:${APP_GID}
 
 # Expose HTTP and HTTPS ports
 EXPOSE 80 443

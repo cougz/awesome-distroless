@@ -1,0 +1,2 @@
+# This directory will contain Redis data
+# Mount this directory to persist data between container restarts
