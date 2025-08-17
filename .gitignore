@@ -32,6 +32,8 @@ coverage/
 .coverage
 *.cover
 .pytest_cache/
+test-*/
+tests-*/
 
 # Temporary files
 tmp/

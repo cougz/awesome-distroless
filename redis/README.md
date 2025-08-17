@@ -10,17 +10,12 @@ docker compose up -d
 
 ## Configuration
 
+Copy `.env.example` to `.env` and customize:
+
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `REDIS_PORT` | `6379` | Host port |
-
-## Build Arguments
-
-| Argument | Default | Description |
-|----------|---------|-------------|
-| `VERSION` | `7.4.2` | Redis version |
-| `APP_UID` | `1000` | User ID |
-| `APP_GID` | `1000` | Group ID |
+| `TZ` | `UTC` | Container timezone |
 
 ## Data Persistence
 
@@ -28,8 +23,8 @@ Data is stored in `./data` directory (auto-created by Docker).
 
 ## Security
 
-Dangerous commands (FLUSHALL, CONFIG, etc.) are disabled.
-
-## Health Check
-
-Uses `redis-cli ping` for health monitoring.
+- Built with Debian 13 (trixie) for latest security patches
+- Runs as UID 1000 (non-root)
+- No shell access (distroless)
+- Dangerous commands (FLUSHALL, CONFIG, etc.) disabled
+- Health monitoring with `redis-cli ping`

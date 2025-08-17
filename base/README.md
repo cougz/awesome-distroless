@@ -5,13 +5,15 @@ The foundation image for all distroless services. Built from scratch with minima
 ## Features
 
 - **Ultra-minimal**: Built from scratch, only 854KB
-- **Configurable**: UID/GID, timezone via build args
-- **Security**: No shell, no package manager, certificates included
+- **Secure**: No shell, no package manager, certificates included
 - **DNS resolution**: Includes nsswitch.conf for proper name resolution
+- **Latest packages**: Built with Debian 13 (trixie) for security patches
 
-## Build Arguments
+## Build Configuration
 
-| Argument | Default | Description |
+Copy `.env.example` to `.env` to customize build (only used when building locally):
+
+| Variable | Default | Description |
 |----------|---------|-------------|
 | `VERSION` | `1.0.0` | Base image version |
 | `APP_UID` | `1000` | User ID for app user |
@@ -24,14 +26,6 @@ The foundation image for all distroless services. Built from scratch with minima
 docker compose build
 ```
 
-## Contents
-
-- CA certificates for HTTPS
-- Timezone data
-- Minimal user/group configuration
-- DNS resolution configuration
-- No shell or package manager
-
 ## Used By
 
 All other services in this repository inherit from this base image:
@@ -39,18 +33,3 @@ All other services in this repository inherit from this base image:
 - Nginx  
 - Redis
 - Testing utilities (curl, git, go, node)
-
-## Size Comparison
-
-- scratch: 0 bytes
-- distroless-base: 854KB
-- alpine:latest: ~5MB
-- debian:trixie-slim: ~74MB
-
-## Security
-
-- No shell access
-- No package manager
-- Minimal attack surface
-- Non-root user by default
-- Root certificates included

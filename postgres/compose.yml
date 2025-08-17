@@ -3,11 +3,6 @@ services:
     build:
       context: ..
       dockerfile: postgres/Dockerfile
-      args:
-        VERSION: 17.5
-        APP_UID: 1000
-        APP_GID: 1000
-        TZ: UTC
     image: distroless-postgres:17.5
     container_name: distroless-postgres
     environment:
@@ -26,7 +21,6 @@ services:
       retries: 3
       start_period: 60s
     restart: unless-stopped
-    read_only: true
     tmpfs:
       - /tmp:noexec,nosuid,size=100m
       - /run:noexec,nosuid,size=10m
@@ -34,9 +28,3 @@ services:
       - no-new-privileges:true
     cap_drop:
       - ALL
-    deploy:
-      resources:
-        limits:
-          memory: 512M
-        reservations:
-          memory: 256M

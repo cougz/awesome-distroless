@@ -2,6 +2,8 @@
 
 Minimal, secure distroless Docker images built from scratch. Each service is self-contained and immediately deployable.
 
+All images use Debian 13 (trixie) in the build stage for the latest security patches and stable package versions, then deploy to our minimal distroless base image for maximum security.
+
 ## Why Distroless?
 
 Traditional container images include entire operating systems with hundreds of packages you'll never use. Every binary is a potential security risk. Distroless changes this completely.

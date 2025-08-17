@@ -3,11 +3,6 @@ services:
     build:
       context: ..
       dockerfile: nginx/Dockerfile
-      args:
-        VERSION: 1.27.3
-        APP_UID: 1000
-        APP_GID: 1000
-        TZ: UTC
     image: distroless-nginx:1.27.3
     container_name: distroless-nginx
     environment:
@@ -24,16 +19,9 @@ services:
       retries: 3
       start_period: 10s
     restart: unless-stopped
-    read_only: true
     tmpfs:
       - /tmp:noexec,nosuid,size=50m
     security_opt:
       - no-new-privileges:true
     cap_drop:
       - ALL
-    deploy:
-      resources:
-        limits:
-          memory: 64M
-        reservations:
-          memory: 16M

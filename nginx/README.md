@@ -12,23 +12,21 @@ Access at: http://localhost:8080
 
 ## Configuration
 
+Copy `.env.example` to `.env` and customize:
+
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `NGINX_PORT` | `8080` | Host port |
-
-## Build Arguments
-
-| Argument | Default | Description |
-|----------|---------|-------------|
-| `VERSION` | `1.27.3` | Nginx version |
-| `APP_UID` | `1000` | User ID |
-| `APP_GID` | `1000` | Group ID |
+| `TZ` | `UTC` | Container timezone |
 
 ## Content & Config
 
 - Static content: `./html` directory (auto-created)
 - Custom configs: `./config` directory (auto-created)
 
-## Health Check
+## Security
 
-Uses `nginx -t` for configuration validation.
+- Built with Debian 13 (trixie) for latest security patches
+- Runs as UID 1000 on port 8080 (rootless)
+- No shell access (distroless)
+- Health monitoring with `nginx -t`
