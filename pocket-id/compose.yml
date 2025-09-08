@@ -3,17 +3,14 @@ name: pocket-id
 services:
   pocket-id-database:
     container_name: "${COMPOSE_PROJECT_NAME:-pocket-id}-database"
-    profiles:
-      - build
-      - image
-    image: distroless-postgres:17.5
+    image: ${POSTGRES_IMAGE:-distroless-postgres:17.5}
     environment:
       POSTGRES_DB: "${POSTGRES_DB:-postgres}"
       POSTGRES_USER: "${POSTGRES_USER:-postgres}"
       POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-postgres}"
       TZ: "${TZ:-UTC}"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - pocket-id-database:/var/lib/postgresql/data
     restart: unless-stopped
     read_only: true
     security_opt:
@@ -36,8 +33,9 @@ services:
     depends_on:
       pocket-id-database:
         condition: service_healthy
-    profiles:
-      - build
+    # Image can be overridden via POCKET_ID_IMAGE env var (e.g., for registry images)
+    # Default is local image tag based on version
+    image: ${POCKET_ID_IMAGE:-pocket-id:${POCKET_ID_VERSION:-1.9.1}}
     build:
       context: .
       dockerfile: Dockerfile
@@ -45,9 +43,8 @@ services:
         APP_UID: "${APP_UID:-1000}"
         APP_GID: "${APP_GID:-1000}"
         TZ: "${TZ:-UTC}"
-        VERSION: "${POCKET_ID_VERSION:-1.7.0}"
-        BASE_IMAGE: "ghcr.io/cougz/awesome-distroless/base:1.0.0"
-    image: pocket-id:1.7.0
+        VERSION: "${POCKET_ID_VERSION:-1.9.1}"
+        BASE_IMAGE: "${BASE_IMAGE:-ghcr.io/cougz/awesome-distroless/base:1.0.0}"
     ports:
       - "${WEB_PORT:-3000}:1411"
     environment:
@@ -57,36 +54,7 @@ services:
       TRUST_PROXY: "true"
       TZ: "${TZ:-UTC}"
     volumes:
-      - app_data:/app/data
-    restart: unless-stopped
-    read_only: true
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
-    tmpfs:
-      - "/tmp:size=${TMPFS_SIZE:-1G},noexec,nosuid,nodev"
-    networks:
-      - pocket-id
-
-  pocket-id-app-image:
-    container_name: "${COMPOSE_PROJECT_NAME:-pocket-id}-app"
-    depends_on:
-      pocket-id-database:
-        condition: service_healthy
-    profiles:
-      - image
-    image: pocket-id:1.7.0
-    ports:
-      - "${WEB_PORT:-3000}:1411"
-    environment:
-      DB_PROVIDER: "postgres"
-      DB_CONNECTION_STRING: "postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@pocket-id-database:5432/${POSTGRES_DB:-postgres}"
-      APP_URL: "${APP_URL:-http://localhost:3000}"
-      TRUST_PROXY: "true"
-      TZ: "${TZ:-UTC}"
-    volumes:
-      - app_data:/app/data
+      - pocket-id-app:/app/data
     restart: unless-stopped
     read_only: true
     security_opt:
@@ -99,8 +67,10 @@ services:
       - pocket-id
 
 volumes:
-  postgres_data:
-  app_data:
+  pocket-id-database:
+    name: "${COMPOSE_PROJECT_NAME:-pocket-id}-database"
+  pocket-id-app:
+    name: "${COMPOSE_PROJECT_NAME:-pocket-id}-app"
 
 networks:
   pocket-id:

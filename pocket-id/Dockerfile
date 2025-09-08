@@ -2,12 +2,12 @@
 ARG BASE_IMAGE=distroless-base:1.0.0
 
 # Global build args  
-ARG VERSION=1.7.0
+ARG VERSION=1.9.1
 ARG APP_UID=1000
 ARG APP_GID=1000
 ARG TZ=UTC
-ARG NODE_VERSION=24.5.0
-ARG GO_VERSION=1.24.6
+ARG NODE_VERSION=24.7.0
+ARG GO_VERSION=1.25.1
 
 # Stage 1: Clone source code using debian with git
 FROM debian:trixie-slim AS source-stage
@@ -106,7 +106,7 @@ EXPOSE 1411
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-  CMD ["/usr/local/bin/pocket-id", "--version"]
+  CMD ["/usr/local/bin/pocket-id", "healthcheck"]
 
 # Default command to run pocket-id
 CMD ["/usr/local/bin/pocket-id"]

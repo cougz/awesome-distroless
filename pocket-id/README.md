@@ -17,27 +17,36 @@ Pocket-ID is a lightweight, self-hosted OAuth2 and OpenID Connect provider that 
 
 ## Quick Start
 
-### Option 1: Use Pre-built Images (Recommended)
+### Option 1: Use Pre-built Images from Registry
 ```bash
 # Copy environment file
 cp .env.example .env
 
-# Edit configuration as needed
+# Edit .env to use registry images (uncomment the image variables)
 nano .env
 
-# Start with pre-built images
-docker compose --profile image up -d
+# Start with registry images
+docker compose up -d
 ```
 
-### Option 2: Build from Source
+### Option 2: Build from Source Locally
 ```bash
 # Copy environment file  
 cp .env.example .env
 
-# Edit configuration as needed
+# Edit configuration as needed (keep image variables commented)
 nano .env
 
 # Build and start
+docker compose up -d --build
+```
+
+### Option 3: Use Existing Local Images
+```bash
+# Copy environment file
+cp .env.example .env
+
+# Start with existing local images (no build)
 docker compose up -d
 ```
 
@@ -49,7 +58,12 @@ docker compose up -d
 - `APP_UID=1000` - User ID for container user
 - `APP_GID=1000` - Group ID for container user  
 - `TZ=UTC` - Timezone setting
-- `POCKET_ID_VERSION=1.7.0` - Pocket-ID version to build
+- `POCKET_ID_VERSION=1.9.1` - Pocket-ID version to build
+
+**Image Configuration (optional):**
+- `POCKET_ID_IMAGE` - Override pocket-id image (e.g., `ghcr.io/cougz/awesome-distroless/pocket-id:1.9.1`)
+- `POSTGRES_IMAGE` - Override postgres image (e.g., `ghcr.io/cougz/awesome-distroless/postgres:17.5`)
+- `BASE_IMAGE` - Override base image for builds (default: `ghcr.io/cougz/awesome-distroless/base:1.0.0`)
 
 **Runtime Configuration:**
 - `WEB_PORT=3000` - Port to expose on host
@@ -57,6 +71,26 @@ docker compose up -d
 - `POSTGRES_USER=postgres` - Database username
 - `POSTGRES_PASSWORD=postgres` - Database password
 - `APP_URL=http://localhost:3000` - External URL for the service
+
+## Usage Examples
+
+**Build specific version locally:**
+```bash
+POCKET_ID_VERSION=1.8.0 docker compose up -d --build
+```
+
+**Use registry images:**
+```bash
+export POCKET_ID_IMAGE=ghcr.io/cougz/awesome-distroless/pocket-id:1.9.1
+export POSTGRES_IMAGE=ghcr.io/cougz/awesome-distroless/postgres:17.5
+docker compose up -d
+```
+
+**Force rebuild:**
+```bash
+docker compose build --no-cache
+docker compose up -d
+```
 
 ## Default Credentials
 
