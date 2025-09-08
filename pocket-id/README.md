@@ -58,10 +58,10 @@ docker compose up -d
 - `APP_UID=1000` - User ID for container user
 - `APP_GID=1000` - Group ID for container user  
 - `TZ=UTC` - Timezone setting
-- `POCKET_ID_VERSION=1.9.1` - Pocket-ID version to build
+- `POCKET_ID_VERSION=1.10.0` - Pocket-ID version to build
 
 **Image Configuration (optional):**
-- `POCKET_ID_IMAGE` - Override pocket-id image (e.g., `ghcr.io/cougz/awesome-distroless/pocket-id:1.9.1`)
+- `POCKET_ID_IMAGE` - Override pocket-id image (e.g., `ghcr.io/cougz/awesome-distroless/pocket-id:1.10.0`)
 - `POSTGRES_IMAGE` - Override postgres image (e.g., `ghcr.io/cougz/awesome-distroless/postgres:17.5`)
 - `BASE_IMAGE` - Override base image for builds (default: `ghcr.io/cougz/awesome-distroless/base:1.0.0`)
 
@@ -76,12 +76,12 @@ docker compose up -d
 
 **Build specific version locally:**
 ```bash
-POCKET_ID_VERSION=1.8.0 docker compose up -d --build
+POCKET_ID_VERSION=1.10.0 docker compose up -d --build
 ```
 
 **Use registry images:**
 ```bash
-export POCKET_ID_IMAGE=ghcr.io/cougz/awesome-distroless/pocket-id:1.9.1
+export POCKET_ID_IMAGE=ghcr.io/cougz/awesome-distroless/pocket-id:1.10.0
 export POSTGRES_IMAGE=ghcr.io/cougz/awesome-distroless/postgres:17.5
 docker compose up -d
 ```
