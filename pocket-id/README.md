@@ -100,8 +100,8 @@ Refer to [Pocket-ID documentation](https://github.com/pocket-id/pocket-id) for i
 
 ## Volumes
 
-- `postgres_data` - PostgreSQL database storage
-- `app_data` - Pocket-ID application data
+- `database` - PostgreSQL database storage
+- `app` - Pocket-ID application data
 
 ## Security Features
 
@@ -132,16 +132,16 @@ Refer to [Pocket-ID documentation](https://github.com/pocket-id/pocket-id) for i
 **Container fails to start:**
 ```bash
 # Check logs
-docker compose logs pocket-id-app
-docker compose logs pocket-id-database
+docker compose logs app
+docker compose logs database
 
 # Verify database is ready
-docker compose exec pocket-id-database pg_isready -U postgres
+docker compose exec database pg_isready -U postgres
 ```
 
 **Permission issues:**
 - Ensure `APP_UID` and `APP_GID` match your host user if mounting host directories
-- Check volume permissions: `docker volume inspect pocket-id_app_data`
+- Check volume permissions: `docker volume inspect pocket-id_app`
 
 ## License
 

@@ -1,8 +1,8 @@
 name: pocket-id
 
 services:
-  pocket-id-database:
-    container_name: "${COMPOSE_PROJECT_NAME:-pocket-id}-database"
+  database:
+    container_name: pocket-id-database
     image: ${POSTGRES_IMAGE:-distroless-postgres:17.5}
     environment:
       POSTGRES_DB: "${POSTGRES_DB:-postgres}"
@@ -10,7 +10,7 @@ services:
       POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-postgres}"
       TZ: "${TZ:-UTC}"
     volumes:
-      - pocket-id-database:/var/lib/postgresql/data
+      - database:/var/lib/postgresql/data
     restart: unless-stopped
     read_only: true
     security_opt:
@@ -20,7 +20,7 @@ services:
     tmpfs:
       - "/tmp:size=${TMPFS_SIZE:-1G},noexec,nosuid,nodev"
     networks:
-      - pocket-id
+      - default
     healthcheck:
       test: ["CMD", "/usr/local/bin/pg_isready", "-U", "${POSTGRES_USER:-postgres}", "-d", "${POSTGRES_DB:-postgres}"]
       interval: 30s
@@ -28,10 +28,10 @@ services:
       start_period: 60s
       retries: 3
 
-  pocket-id-app:
-    container_name: "${COMPOSE_PROJECT_NAME:-pocket-id}-app"
+  app:
+    container_name: pocket-id-app
     depends_on:
-      pocket-id-database:
+      database:
         condition: service_healthy
     # Image can be overridden via POCKET_ID_IMAGE env var (e.g., for registry images)
     # Default is local image tag based on version
@@ -49,12 +49,12 @@ services:
       - "${WEB_PORT:-3000}:1411"
     environment:
       DB_PROVIDER: "postgres"
-      DB_CONNECTION_STRING: "postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@pocket-id-database:5432/${POSTGRES_DB:-postgres}"
+      DB_CONNECTION_STRING: "postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@database:5432/${POSTGRES_DB:-postgres}"
       APP_URL: "${APP_URL:-http://localhost:3000}"
       TRUST_PROXY: "true"
       TZ: "${TZ:-UTC}"
     volumes:
-      - pocket-id-app:/app/data
+      - app:/app/data
     restart: unless-stopped
     read_only: true
     security_opt:
@@ -64,14 +64,11 @@ services:
     tmpfs:
       - "/tmp:size=${TMPFS_SIZE:-1G},noexec,nosuid,nodev"
     networks:
-      - pocket-id
+      - default
 
 volumes:
-  pocket-id-database:
-    name: "${COMPOSE_PROJECT_NAME:-pocket-id}-database"
-  pocket-id-app:
-    name: "${COMPOSE_PROJECT_NAME:-pocket-id}-app"
+  database:
+  app:
 
 networks:
-  pocket-id:
-    driver: bridge
+  default:
