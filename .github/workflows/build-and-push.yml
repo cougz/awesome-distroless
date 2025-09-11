@@ -77,6 +77,13 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      - name: Make base package public
+        run: |
+          gh api --method PATCH /user/packages/container/base \
+            --field visibility=public
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   # Job 2: Build PostgreSQL image
   build-postgres:
     runs-on: ubuntu-latest
@@ -127,6 +134,13 @@ jobs:
             POSTGRES_DB=postgres
             BASE_IMAGE=${{ env.REGISTRY }}/${{ env.REPO_NAME }}/base:1.0.0
 
+      - name: Make postgres package public
+        run: |
+          gh api --method PATCH /user/packages/container/postgres \
+            --field visibility=public
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   # Job 3: Build Nginx image
   build-nginx:
     runs-on: ubuntu-latest
@@ -173,6 +187,13 @@ jobs:
             TZ=UTC
             BASE_IMAGE=${{ env.REGISTRY }}/${{ env.REPO_NAME }}/base:1.0.0
 
+      - name: Make nginx package public
+        run: |
+          gh api --method PATCH /user/packages/container/nginx \
+            --field visibility=public
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   # Job 4: Build Redis image
   build-redis:
     runs-on: ubuntu-latest
@@ -218,6 +239,13 @@ jobs:
             APP_GID=1000
             TZ=UTC
             BASE_IMAGE=${{ env.REGISTRY }}/${{ env.REPO_NAME }}/base:1.0.0
+
+      - name: Make redis package public
+        run: |
+          gh api --method PATCH /user/packages/container/redis \
+            --field visibility=public
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   # Job 5: Build Pocket-ID image
   build-pocket-id:
@@ -266,6 +294,13 @@ jobs:
             VERSION=1.7.0
             BASE_IMAGE=${{ env.REGISTRY }}/${{ env.REPO_NAME }}/base:1.0.0
 
+      - name: Make pocket-id package public
+        run: |
+          gh api --method PATCH /user/packages/container/pocket-id \
+            --field visibility=public
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   # Job 6: Build Backrest image
   build-backrest:
     runs-on: ubuntu-latest
@@ -312,6 +347,13 @@ jobs:
             TZ=UTC
             VERSION=1.9.1
             BASE_IMAGE=${{ env.REGISTRY }}/${{ env.REPO_NAME }}/base:1.0.0
+
+      - name: Make backrest package public
+        run: |
+          gh api --method PATCH /user/packages/container/backrest \
+            --field visibility=public
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   # Job 7: Summary and cleanup
   build-summary:
