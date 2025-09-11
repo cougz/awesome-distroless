@@ -19,7 +19,7 @@ services:
         POSTGRES_USER: ${POSTGRES_USER:-postgres}
         POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
         POSTGRES_DB: ${POSTGRES_DB:-postgres}
-    image: distroless-postgres:17.5
+    image: distroless-postgres:17.6
     container_name: distroless-postgres
     environment:
       TZ: ${TZ:-UTC}
@@ -46,7 +46,7 @@ services:
   # Deploy from pre-built image
   postgres-image:
     profiles: ["image"]
-    image: ghcr.io/cougz/awesome-distroless/postgres:17.5
+    image: ghcr.io/cougz/awesome-distroless/postgres:17.6
     container_name: distroless-postgres
     environment:
       TZ: ${TZ:-UTC}

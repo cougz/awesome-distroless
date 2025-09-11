@@ -111,7 +111,7 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.REPO_NAME }}/postgres
           tags: |
-            type=raw,value=17.5
+            type=raw,value=17.6
 
       - name: Build and push PostgreSQL image
         uses: docker/build-push-action@v5
@@ -368,7 +368,7 @@ jobs:
           echo "| Service | Status | Registry |" >> $GITHUB_STEP_SUMMARY
           echo "|---------|--------|----------|" >> $GITHUB_STEP_SUMMARY
           echo "| Base | ${{ needs.build-base.result }} | \`ghcr.io/${{ env.REPO_NAME }}/base:1.0.0\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| PostgreSQL | ${{ needs.build-postgres.result }} | \`ghcr.io/${{ env.REPO_NAME }}/postgres:17.5\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| PostgreSQL | ${{ needs.build-postgres.result }} | \`ghcr.io/${{ env.REPO_NAME }}/postgres:17.6\` |" >> $GITHUB_STEP_SUMMARY
           echo "| Nginx | ${{ needs.build-nginx.result }} | \`ghcr.io/${{ env.REPO_NAME }}/nginx:1.29.1\` |" >> $GITHUB_STEP_SUMMARY
           echo "| Redis | ${{ needs.build-redis.result }} | \`ghcr.io/${{ env.REPO_NAME }}/redis:7.4.2\` |" >> $GITHUB_STEP_SUMMARY
           echo "| Pocket-ID | ${{ needs.build-pocket-id.result }} | \`ghcr.io/${{ env.REPO_NAME }}/pocket-id:1.10.0\` |" >> $GITHUB_STEP_SUMMARY
@@ -380,7 +380,7 @@ jobs:
           echo "docker compose --profile image up" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "# Or pull individual images" >> $GITHUB_STEP_SUMMARY
-          echo "docker pull ghcr.io/${{ env.REPO_NAME }}/postgres:17.5" >> $GITHUB_STEP_SUMMARY
+          echo "docker pull ghcr.io/${{ env.REPO_NAME }}/postgres:17.6" >> $GITHUB_STEP_SUMMARY
           echo "docker pull ghcr.io/${{ env.REPO_NAME }}/nginx:1.29.1" >> $GITHUB_STEP_SUMMARY
           echo "docker pull ghcr.io/${{ env.REPO_NAME }}/redis:7.4.2" >> $GITHUB_STEP_SUMMARY
           echo "docker pull ghcr.io/${{ env.REPO_NAME }}/pocket-id:1.10.0" >> $GITHUB_STEP_SUMMARY

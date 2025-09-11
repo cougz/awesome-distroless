@@ -3,7 +3,7 @@ name: pocket-id
 services:
   database:
     container_name: pocket-id-database
-    image: ${POSTGRES_IMAGE:-distroless-postgres:17.5}
+    image: ${POSTGRES_IMAGE:-distroless-postgres:17.6}
     environment:
       POSTGRES_DB: "${POSTGRES_DB:-postgres}"
       POSTGRES_USER: "${POSTGRES_USER:-postgres}"
