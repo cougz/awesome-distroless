@@ -35,7 +35,7 @@ services:
         condition: service_healthy
     # Image can be overridden via POCKET_ID_IMAGE env var (e.g., for registry images)
     # Default is local image tag based on version
-    image: ${POCKET_ID_IMAGE:-pocket-id:${POCKET_ID_VERSION:-1.9.1}}
+    image: ${POCKET_ID_IMAGE:-pocket-id:${POCKET_ID_VERSION:-1.10.0}}
     build:
       context: .
       dockerfile: Dockerfile
@@ -43,7 +43,7 @@ services:
         APP_UID: "${APP_UID:-1000}"
         APP_GID: "${APP_GID:-1000}"
         TZ: "${TZ:-UTC}"
-        VERSION: "${POCKET_ID_VERSION:-1.9.1}"
+        VERSION: "${POCKET_ID_VERSION:-1.10.0}"
         BASE_IMAGE: "${BASE_IMAGE:-ghcr.io/cougz/awesome-distroless/base:1.0.0}"
     ports:
       - "${WEB_PORT:-3000}:1411"
