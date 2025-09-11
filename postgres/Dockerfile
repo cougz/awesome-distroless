@@ -30,6 +30,7 @@ RUN apt-get update && \
         ca-certificates \
         libssl-dev \
         zlib1g-dev \
+        libzstd1 \
         binutils \
         bison \
         flex && \

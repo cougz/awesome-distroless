@@ -22,6 +22,7 @@ RUN apt-get update && \
         ca-certificates \
         pkg-config \
         libssl-dev \
+        libc6 \
         binutils && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*

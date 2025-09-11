@@ -23,6 +23,8 @@ RUN apt-get update && \
         libssl-dev \
         libpcre2-dev \
         zlib1g-dev \
+        libzstd1 \
+        libc6 \
         binutils && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
