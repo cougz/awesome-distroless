@@ -24,7 +24,7 @@ LABEL \
     org.opencontainers.image.licenses="MIT"
 
 # Copy the pocket-id binary from the builder stage
-COPY --from=builder /usr/local/bin/pocket-id /usr/local/bin/pocket-id
+COPY --from=builder /app/pocket-id /app/pocket-id
 
 USER ${APP_UID}:${APP_GID}
 
@@ -33,6 +33,7 @@ ENV TZ=${TZ}
 EXPOSE 1411
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-  CMD ["/usr/local/bin/pocket-id", "healthcheck"]
+  CMD ["/app/pocket-id", "healthcheck"]
 
-ENTRYPOINT ["/usr/local/bin/pocket-id"]
+ENTRYPOINT ["/app/pocket-id"]
+
