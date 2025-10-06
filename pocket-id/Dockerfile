@@ -2,7 +2,7 @@
 ARG BASE_IMAGE=distroless-base:1.0.0
 
 # Global build args  
-ARG VERSION=1.10.0
+ARG VERSION=1.13.0
 ARG APP_UID=1000
 ARG APP_GID=1000
 ARG TZ=UTC

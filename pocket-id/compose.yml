@@ -33,7 +33,7 @@ services:
     depends_on:
       database:
         condition: service_healthy
-    image: ghcr.io/cougz/awesome-distroless/pocket-id:1.10.0
+    image: ghcr.io/cougz/awesome-distroless/pocket-id:1.13.0
     ports:
       - "${WEB_PORT:-3000}:1411"
     environment:
