@@ -3,16 +3,12 @@ ARG APP_UID=1000
 ARG APP_GID=1000
 ARG TZ=UTC
 
-# Download stage
-FROM alpine:3.20 AS pocket-id-download
-ARG VERSION
-RUN apk add --no-cache curl tar binutils
-RUN curl -fL "https://github.com/pocket-id/pocket-id/releases/download/v${VERSION}/pocket-id_${VERSION}_linux_amd64.tar.gz" -o pocket-id.tar.gz
-RUN tar -xzf pocket-id.tar.gz -C /
-RUN strip /pocket-id
+# Use the official pocket-id image as a builder
+FROM ghcr.io/pocket-id/pocket-id:v${VERSION} AS builder
 
-# Final stage
-FROM gcr.io/distroless/static-debian12
+# Use your existing distroless base image
+FROM distroless-base:1.0.0
+
 ARG VERSION
 ARG APP_UID
 ARG APP_GID
@@ -27,8 +23,8 @@ LABEL \
     org.opencontainers.image.version="${VERSION}" \
     org.opencontainers.image.licenses="MIT"
 
-COPY --from=pocket-id-download /pocket-id /pocket-id
-COPY --from=pocket-id-download /LICENSE /LICENSE
+# Copy the pocket-id binary from the builder stage
+COPY --from=builder /usr/local/bin/pocket-id /usr/local/bin/pocket-id
 
 USER ${APP_UID}:${APP_GID}
 
@@ -37,6 +33,6 @@ ENV TZ=${TZ}
 EXPOSE 1411
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-  CMD ["/pocket-id", "healthcheck"]
+  CMD ["/usr/local/bin/pocket-id", "healthcheck"]
 
-ENTRYPOINT ["/pocket-id"]
+ENTRYPOINT ["/usr/local/bin/pocket-id"]
