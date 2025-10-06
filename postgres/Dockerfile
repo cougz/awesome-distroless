@@ -33,7 +33,8 @@ RUN apt-get update && \
         libzstd1 \
         binutils \
         bison \
-        flex && \
+        flex \
+        postgresql-contrib && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
@@ -108,6 +109,10 @@ ARG POSTGRES_DB
 
 # Copy PostgreSQL installation
 COPY --from=builder /usr/local /usr/local
+
+# Copy citext extension
+COPY --from=builder /usr/share/postgresql/17/extension/citext.control /usr/local/share/postgresql/extension/
+COPY --from=builder /usr/lib/postgresql/17/lib/citext.so /usr/local/lib/postgresql/
 
 # Copy runtime libraries (essential for PostgreSQL)
 COPY --from=builder /lib/x86_64-linux-gnu/libssl.so.3 /lib/x86_64-linux-gnu/libssl.so.3
