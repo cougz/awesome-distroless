@@ -2,12 +2,13 @@ ARG VERSION=1.13.0
 ARG APP_UID=1000
 ARG APP_GID=1000
 ARG TZ=UTC
+ARG BASE_IMAGE=distroless-base:1.0.0
 
 # Use the official pocket-id image as a builder
 FROM ghcr.io/pocket-id/pocket-id:v${VERSION} AS builder
 
 # Use your existing distroless base image
-FROM distroless-base:1.0.0
+FROM ${BASE_IMAGE}
 
 ARG VERSION
 ARG APP_UID
