@@ -274,7 +274,7 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.REPO_NAME }}/pocket-id
           tags: |
-            type=raw,value=1.13.0
+            type=raw,value=1.10.0
 
       - name: Build and push Pocket-ID image
         uses: docker/build-push-action@v5
@@ -291,7 +291,7 @@ jobs:
             APP_UID=1000
             APP_GID=1000
             TZ=UTC
-            VERSION=1.13.0
+            VERSION=1.10.0
             BASE_IMAGE=${{ env.REGISTRY }}/${{ env.REPO_NAME }}/base:1.0.0
 
       - name: Make pocket-id package public
@@ -371,7 +371,7 @@ jobs:
           echo "| PostgreSQL | ${{ needs.build-postgres.result }} | \`ghcr.io/${{ env.REPO_NAME }}/postgres:17.6\` |" >> $GITHUB_STEP_SUMMARY
           echo "| Nginx | ${{ needs.build-nginx.result }} | \`ghcr.io/${{ env.REPO_NAME }}/nginx:1.29.1\` |" >> $GITHUB_STEP_SUMMARY
           echo "| Redis | ${{ needs.build-redis.result }} | \`ghcr.io/${{ env.REPO_NAME }}/redis:7.4.2\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| Pocket-ID | ${{ needs.build-pocket-id.result }} | \`ghcr.io/${{ env.REPO_NAME }}/pocket-id:1.13.0\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Pocket-ID | ${{ needs.build-pocket-id.result }} | \`ghcr.io/${{ env.REPO_NAME }}/pocket-id:1.10.0\` |" >> $GITHUB_STEP_SUMMARY
           echo "| Backrest | ${{ needs.build-backrest.result }} | \`ghcr.io/${{ env.REPO_NAME }}/backrest:1.9.1\` |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 📦 Usage" >> $GITHUB_STEP_SUMMARY
@@ -383,6 +383,6 @@ jobs:
           echo "docker pull ghcr.io/${{ env.REPO_NAME }}/postgres:17.6" >> $GITHUB_STEP_SUMMARY
           echo "docker pull ghcr.io/${{ env.REPO_NAME }}/nginx:1.29.1" >> $GITHUB_STEP_SUMMARY
           echo "docker pull ghcr.io/${{ env.REPO_NAME }}/redis:7.4.2" >> $GITHUB_STEP_SUMMARY
-          echo "docker pull ghcr.io/${{ env.REPO_NAME }}/pocket-id:1.13.0" >> $GITHUB_STEP_SUMMARY
+          echo "docker pull ghcr.io/${{ env.REPO_NAME }}/pocket-id:1.10.0" >> $GITHUB_STEP_SUMMARY
           echo "docker pull ghcr.io/${{ env.REPO_NAME }}/backrest:1.9.1" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
