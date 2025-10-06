@@ -36,4 +36,3 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
   CMD ["/app/pocket-id", "healthcheck"]
 
 ENTRYPOINT ["/app/pocket-id"]
-
