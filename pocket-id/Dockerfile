@@ -24,6 +24,8 @@ LABEL \
     org.opencontainers.image.version="${VERSION}" \
     org.opencontainers.image.licenses="MIT"
 
+WORKDIR /app
+
 # Copy the pocket-id binary from the builder stage
 COPY --from=builder /app/pocket-id /app/pocket-id
 
